@@ -5,6 +5,7 @@ export const useAuthStore = defineStore('auth', () => {
   const accessToken = ref(localStorage.getItem('esi_access_token') || null)
   const refreshToken = ref(localStorage.getItem('esi_refresh_token') || null)
   const character = ref(JSON.parse(localStorage.getItem('esi_character') || 'null'))
+  const characterData = ref(JSON.parse(localStorage.getItem('esi_character_data') || '{}'))
   const expiresAt = ref(parseInt(localStorage.getItem('esi_expires_at') || '0'))
 
   const isAuthenticated = computed(() => {
@@ -26,15 +27,27 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('esi_character', JSON.stringify(charData))
   }
 
+  const setCharacterData = (data) => {
+    characterData.value = data
+    localStorage.setItem('esi_character_data', JSON.stringify(data))
+  }
+
+  const updateCharacterData = (key, value) => {
+    characterData.value[key] = value
+    localStorage.setItem('esi_character_data', JSON.stringify(characterData.value))
+  }
+
   const logout = () => {
     accessToken.value = null
     refreshToken.value = null
     character.value = null
+    characterData.value = {}
     expiresAt.value = 0
     
     localStorage.removeItem('esi_access_token')
     localStorage.removeItem('esi_refresh_token')
     localStorage.removeItem('esi_character')
+    localStorage.removeItem('esi_character_data')
     localStorage.removeItem('esi_expires_at')
   }
 
@@ -42,10 +55,13 @@ export const useAuthStore = defineStore('auth', () => {
     accessToken,
     refreshToken,
     character,
+    characterData,
     expiresAt,
     isAuthenticated,
     setTokens,
     setCharacter,
+    setCharacterData,
+    updateCharacterData,
     logout
   }
 })

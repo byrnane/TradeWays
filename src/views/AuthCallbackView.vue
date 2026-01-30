@@ -34,6 +34,7 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { exchangeCodeForTokens, verifyToken } from '../services/esi.js'
+import { loadEssentialCharacterData } from '../services/character.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -43,6 +44,25 @@ const loading = ref(true)
 const error = ref('')
 const success = ref(false)
 const characterName = ref('')
+
+const loadFullCharacterData = async (accessToken, characterId) => {
+  try {
+    const response = await fetch(`https://esi.evetech.net/latest/characters/${characterId}/`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load character data: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Failed to load full character data:', error)
+    throw error
+  }
+}
 
 onMounted(async () => {
   try {
@@ -56,16 +76,54 @@ onMounted(async () => {
     localStorage.removeItem('esi_state')
     
     const tokenData = await exchangeCodeForTokens(code)
-    const characterData = await verifyToken(tokenData.access_token)
+    const authCharacterData = await verifyToken(tokenData.access_token)
+    
+    // Extract character_id from CharacterID field (ESI returns it with capital letters)
+    if (!authCharacterData.character_id && authCharacterData.CharacterID) {
+      authCharacterData.character_id = authCharacterData.CharacterID
+    }
+    
+    // Map other fields to consistent naming
+    if (authCharacterData.CharacterName && !authCharacterData.name) {
+      authCharacterData.name = authCharacterData.CharacterName
+    }
+    
+    if (!authCharacterData.character_id) {
+      throw new Error('Could not extract character_id from auth data')
+    }
+    
+    // Load full character data with game parameters
+    const fullCharacterData = await loadFullCharacterData(
+      tokenData.access_token,
+      authCharacterData.character_id
+    )
+    
+    // Merge auth data with full character data
+    const mergedCharacterData = {
+      ...authCharacterData,
+      ...fullCharacterData
+    }
     
     authStore.setTokens(
       tokenData.access_token,
       tokenData.refresh_token,
       tokenData.expires_in
     )
-    authStore.setCharacter(characterData)
+    authStore.setCharacter(mergedCharacterData)
     
-    characterName.value = characterData.name
+    // Load essential character data (wallet, location, etc.)
+    try {
+      const essentialData = await loadEssentialCharacterData(
+        tokenData.access_token,
+        authCharacterData.character_id
+      )
+      authStore.setCharacterData(essentialData)
+    } catch (dataError) {
+      console.error('Failed to load character data:', dataError)
+      // Don't fail auth if character data loading fails
+    }
+    
+    characterName.value = mergedCharacterData.name
     success.value = true
     
     setTimeout(() => {
@@ -73,6 +131,7 @@ onMounted(async () => {
     }, 2000)
     
   } catch (err) {
+    console.error('Auth callback error:', err)
     error.value = err.message || 'Произошла ошибка при обработке авторизации'
   } finally {
     loading.value = false

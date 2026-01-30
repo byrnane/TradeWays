@@ -2,7 +2,7 @@
   <div class="relative min-h-screen bg-gradient-to-b from-neutral-950 to-neutral-900">
     <header class="sticky top-0 z-20 border-b border-neutral-800 bg-neutral-950/80 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/60">
       <div class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <div class="flex items-center gap-3">
+        <router-link to="/" class="flex items-center gap-3">
           <div class="grid h-9 w-9 place-items-center rounded-lg bg-neutral-800 ring-1 ring-neutral-700 shadow-soft text-neutral-200 font-semibold">
             TW
           </div>
@@ -10,7 +10,7 @@
             <h1 class="text-xl font-semibold tracking-tight">TradeWay</h1>
             <p class="text-sm text-neutral-400">Авторизация ESI</p>
           </div>
-        </div>
+        </router-link>
         <router-link to="/" class="rounded-md border border-neutral-700 bg-neutral-800/60 px-3 py-2 text-sm text-neutral-200 hover:bg-neutral-700/60">
           Назад
         </router-link>
