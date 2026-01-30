@@ -110,7 +110,39 @@ const resolveNames = async (data) => {
   }
 }
 
-export const loadEssentialCharacterData = async (accessToken, characterId) => {
+export const loadFullCharacterData = async (accessToken, characterId) => {
+  try {
+    const response = await fetch(`https://esi.evetech.net/latest/characters/${characterId}/`, {
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    })
+    
+    if (!response.ok) {
+      throw new Error(`Failed to load character data: ${response.status}`)
+    }
+    
+    return await response.json()
+  } catch (error) {
+    console.error('Failed to load full character data:', error)
+    throw error
+  }
+}
+
+export const loadEssentialCharacterData = async (accessToken, characterId, forceRefresh = false) => {
+  // Check cache first
+  const cacheKey = `character_data_${characterId}`
+  const cachedData = localStorage.getItem(cacheKey)
+  const cacheTimestamp = localStorage.getItem(`${cacheKey}_timestamp`)
+  
+  // If cache exists and is less than 10 minutes old, return it
+  if (!forceRefresh && cachedData && cacheTimestamp) {
+    const cacheAge = Date.now() - parseInt(cacheTimestamp)
+    if (cacheAge < 10 * 60 * 1000) { // 10 minutes
+      return JSON.parse(cachedData)
+    }
+  }
+
   const headers = {
     'Authorization': `Bearer ${accessToken}`
   }
@@ -134,6 +166,10 @@ export const loadEssentialCharacterData = async (accessToken, characterId) => {
     
     // Resolve IDs to names
     const resolvedResult = await resolveNames(result)
+    
+    // Cache the result with timestamp
+    localStorage.setItem(cacheKey, JSON.stringify(resolvedResult))
+    localStorage.setItem(`${cacheKey}_timestamp`, Date.now().toString())
     
     return resolvedResult
   } catch (error) {

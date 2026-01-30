@@ -1,30 +1,13 @@
 import { onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
-import { loadEssentialCharacterData } from '../services/character.js'
-
-const loadFullCharacterData = async (accessToken, characterId) => {
-  try {
-    const response = await fetch(`https://esi.evetech.net/latest/characters/${characterId}/`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
-      }
-    })
-    
-    if (!response.ok) {
-      throw new Error(`Failed to load character data: ${response.status}`)
-    }
-    
-    return await response.json()
-  } catch (error) {
-    console.error('Failed to load full character data:', error)
-    throw error
-  }
-}
+import { useUIStore } from '../stores/ui.js'
+import { loadEssentialCharacterData, loadFullCharacterData } from '../services/character.js'
 
 export function useCharacterData() {
   const authStore = useAuthStore()
+  const uiStore = useUIStore()
 
-  const loadCharacterData = async () => {
+  const loadCharacterData = async (forceRefresh = false) => {
     if (!authStore.isAuthenticated || !authStore.character) {
       return
     }
@@ -40,14 +23,15 @@ export function useCharacterData() {
       return
     }
 
-    // Always load fresh data (no caching)
     try {
+      uiStore.startLoading('Загрузка данных персонажа...')
+      
+      // Get valid token (refresh if needed)
+      const token = await authStore.getValidToken()
+      
       // Load full character data if missing security status
       if (!authStore.character?.security_status) {
-        const fullCharacterData = await loadFullCharacterData(
-          authStore.accessToken,
-          characterId
-        )
+        const fullCharacterData = await loadFullCharacterData(token, characterId)
         
         // Merge with existing character data
         const mergedCharacterData = {
@@ -59,14 +43,18 @@ export function useCharacterData() {
       }
       
       // Load essential data (wallet, location, etc.)
-      const essentialData = await loadEssentialCharacterData(
-        authStore.accessToken,
-        characterId
-      )
+      const essentialData = await loadEssentialCharacterData(token, characterId, forceRefresh)
       
       authStore.setCharacterData(essentialData)
+      uiStore.updateDataTimestamp()
     } catch (error) {
       console.error('Failed to load character data:', error)
+      if (error.message.includes('Token refresh failed')) {
+        // Token refresh failed, user needs to re-authenticate
+        authStore.logout()
+      }
+    } finally {
+      uiStore.stopLoading()
     }
   }
 
