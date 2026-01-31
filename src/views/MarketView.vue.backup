@@ -25,24 +25,11 @@
     <main class="lg:pl-64">
       <div class="mx-auto max-w-6xl px-4 py-8">
         <!-- Page Header -->
-        <header class="flex items-center justify-between">
-          <div>
-            <h1 class="text-2xl font-bold text-neutral-100">Рынок</h1>
-            <p class="text-sm text-neutral-400 mt-1">
-              Обновлено: {{ lastRefresh ? new Date(lastRefresh).toLocaleTimeString() : 'никогда' }}
-            </p>
-          </div>
-          <div class="flex items-center gap-3">
-            <button 
-              @click="refreshData"
-              :disabled="marketLoading"
-              class="rounded-md border border-neutral-700 bg-neutral-800 px-4 py-2 text-sm text-neutral-200 hover:bg-neutral-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              {{ marketLoading ? 'Обновление...' : 'Обновить' }}
-            </button>
-          </div>
-        </header>
-        <p class="mt-2 text-neutral-400">Обзор рыночных данных и аналитика</p>
+        <div class="mb-8">
+          <h1 class="text-3xl font-bold tracking-tight text-neutral-100">Рынок</h1>
+          <p class="mt-2 text-neutral-400">Обзор рыночных данных и аналитика</p>
+        </div>
+
         <!-- Market Content -->
         <div class="grid gap-6 lg:grid-cols-4">
           <!-- Categories Sidebar -->
@@ -92,34 +79,121 @@
                   >
                     <span class="text-lg">{{ category.icon }}</span>
                     <span class="flex-1 text-sm font-medium">{{ category.name }}</span>
-                    <div class="flex items-center gap-2 text-xs text-neutral-500">
-                      <span v-if="category.itemsCount">{{ category.itemsCount }} предметов</span>
-                      <span v-if="category.hasChildren" class="flex items-center gap-1">
-                        <svg 
-                          @click.stop="toggleCategory(category.id)"
-                          class="w-4 h-4 transition-transform cursor-pointer hover:text-neutral-300"
-                          :class="{ 'rotate-90': expandedCategories.has(category.id) }"
-                          fill="none" 
-                          stroke="currentColor" 
-                          viewBox="0 0 24 24"
-                        >
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                        </svg>
-                      </span>
-                    </div>
                   </div>
                   
-                  <!-- Nested Categories (recursive) -->
-                  <div v-if="category.children && expandedCategories.has(category.id)">
-                    <CategoryTreeItem 
-                      v-for="subcategory in category.children" 
-                      :key="subcategory.id"
-                      :category="subcategory"
-                      :selected-category="selectedCategory"
-                      :expanded="expandedCategories"
-                      @select="selectCategory"
-                      @toggle="toggleCategory"
-                    />
+                  <!-- Subcategories -->
+                  <div v-if="category.children" class="ml-4 mt-1 space-y-1">
+                    <div v-for="subcategory in category.children" :key="subcategory.id">
+                      <!-- Subcategory with children -->
+                      <div v-if="subcategory.children">
+                        <div 
+                          @click="toggleCategory(subcategory.id)"
+                          class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+                          :class="selectedCategory === subcategory.id 
+                            ? 'bg-accent/10 text-accent' 
+                            : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'"
+                        >
+                          <svg 
+                            class="w-4 h-4 transition-transform"
+                            :class="{ 'rotate-90': expandedCategories.includes(subcategory.id) }"
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span class="flex-1 text-sm">{{ subcategory.name }}</span>
+                        </div>
+                        
+                        <!-- Sub-subcategories -->
+                        <div v-if="expandedCategories.includes(subcategory.id)" class="ml-4 mt-1 space-y-1">
+                          <div v-for="subSubCategory in subcategory.children" :key="subSubCategory.id">
+                            <!-- Sub-subcategory with items -->
+                            <div v-if="subSubCategory.items">
+                              <div 
+                                @click="toggleCategory(subSubCategory.id)"
+                                class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+                                :class="selectedCategory === subSubCategory.id 
+                                  ? 'bg-accent/10 text-accent' 
+                                  : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'"
+                              >
+                                <svg 
+                                  class="w-4 h-4 transition-transform"
+                                  :class="{ 'rotate-90': expandedCategories.includes(subSubCategory.id) }"
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                                <span class="flex-1 text-sm">{{ subSubCategory.name }}</span>
+                              </div>
+                              
+                              <!-- Items -->
+                              <div v-if="expandedCategories.includes(subSubCategory.id)" class="ml-4 mt-1 space-y-1">
+                                <div 
+                                  v-for="item in subSubCategory.items" 
+                                  :key="item.id"
+                                  @click="selectCategory(subSubCategory.id)"
+                                  class="px-3 py-1 rounded cursor-pointer transition-colors text-xs text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30"
+                                >
+                                  {{ item.name }}
+                                </div>
+                              </div>
+                            </div>
+                            <!-- Sub-subcategory without items (direct selection) -->
+                            <div 
+                              v-else
+                              @click="selectCategory(subSubCategory.id)"
+                              class="px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
+                            >
+                              {{ subSubCategory.name }}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Subcategory with items (no children) -->
+                      <div v-else-if="subcategory.items">
+                        <div 
+                          @click="toggleCategory(subcategory.id)"
+                          class="flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+                          :class="selectedCategory === subcategory.id 
+                            ? 'bg-accent/10 text-accent' 
+                            : 'text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50'"
+                        >
+                          <svg 
+                            class="w-4 h-4 transition-transform"
+                            :class="{ 'rotate-90': expandedCategories.includes(subcategory.id) }"
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                          >
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                          </svg>
+                          <span class="flex-1 text-sm">{{ subcategory.name }}</span>
+                        </div>
+                        
+                        <!-- Items -->
+                        <div v-if="expandedCategories.includes(subcategory.id)" class="ml-4 mt-1 space-y-1">
+                          <div 
+                            v-for="item in subcategory.items" 
+                            :key="item.id"
+                            @click="selectCategory(subcategory.id)"
+                            class="px-3 py-1 rounded cursor-pointer transition-colors text-xs text-neutral-500 hover:text-neutral-300 hover:bg-neutral-800/30"
+                          >
+                            {{ item.name }}
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Subcategory without items or children -->
+                      <div 
+                        v-else
+                        @click="selectCategory(subcategory.id)"
+                        class="px-3 py-2 rounded-lg cursor-pointer transition-colors text-sm text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800/50"
+                      >
+                        {{ subcategory.name }}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -133,10 +207,6 @@
               <div class="mb-6 pb-4 border-b border-neutral-800">
                 <h2 class="text-xl font-semibold">{{ getCurrentCategoryName() }}</h2>
                 <p class="text-sm text-neutral-400 mt-1">{{ getCurrentCategoryDescription() }}</p>
-                <!-- Queue Status (for debugging) -->
-                <div v-if="marketLoading" class="text-xs text-neutral-500 mt-2">
-                  Загрузка... {{ categoryItems.length }} предметов загружено
-                </div>
               </div>
               <div class="grid gap-2">
                 <!-- Loading state -->
@@ -204,34 +274,34 @@
 </template>
 
 <script setup>
-// Market view with real ESI API data
 import { ref, computed, onMounted, watch } from 'vue';
 import Sidebar from '../components/Sidebar.vue';
-import CategoryTreeItem from '../components/CategoryTreeItem.vue';
 import { useUIStore } from '../stores/ui.js';
-import { useMarketDataSmart } from '../composables/useMarketDataSmart.js';
+import { useMarketData } from '../composables/useMarketData.js';
 
 const sidebarOpen = ref(false);
 const theme = ref('dark');
 const searchQuery = ref('');
 const selectedCategory = ref(null);
+const expandedCategories = ref([]);
 const currentPage = ref(1);
 const itemsPerPage = 20;
-const categoryItems = ref([]);
+const loading = ref(false);
 const uiStore = useUIStore();
 
-// Use smart loading market data composable
+// Use market data composable
 const { 
   categories, 
-  expandedCategories, 
+  currentCategory, 
+  categoryItems, 
   loading: marketLoading, 
   error: marketError,
-  lastRefresh,
-  initialize,
-  toggleCategory,
-  getCategoryItems,
-  refreshCache
-} = useMarketDataSmart();
+  loadCategories,
+  loadCategory,
+  loadGroupItems,
+  searchItems,
+  getItemDetails
+} = useMarketData();
 
 // Computed properties
 const filteredCategories = computed(() => {
@@ -275,60 +345,51 @@ const toggleTheme = () => {
   localStorage.setItem('theme', theme.value);
 };
 
+const toggleCategory = (categoryId) => {
+  const index = expandedCategories.value.indexOf(categoryId);
+  if (index > -1) {
+    expandedCategories.value.splice(index, 1);
+  } else {
+    expandedCategories.value.push(categoryId);
+  }
+};
+
 const selectCategory = async (categoryId) => {
   selectedCategory.value = categoryId;
   currentPage.value = 1;
   
-  // Load items for this category
+  // Load category items from API
   try {
-    categoryItems.value = await getCategoryItems(categoryId, 100);
+    await loadCategory(categoryId);
   } catch (error) {
-    console.error('Failed to load category items:', error);
+    console.error('Failed to load category:', error);
   }
 };
 
 const getCurrentCategoryName = () => {
   if (!selectedCategory.value) return 'Все предметы'
   
-  const category = findCategoryInTree(selectedCategory.value)
+  const category = categories.value.find(cat => cat.id === selectedCategory.value)
   return category ? category.name : 'Все предметы'
 }
 
 const getCurrentCategoryDescription = () => {
   if (!selectedCategory.value) return ''
   
-  const category = findCategoryInTree(selectedCategory.value)
+  const category = categories.value.find(cat => cat.id === selectedCategory.value)
   return category ? category.description : ''
 }
 
-// Helper to find category in nested tree
-const findCategoryInTree = (categoryId, categoryList = categories.value) => {
-  for (const category of categoryList) {
-    if (category.id === categoryId) {
-      return category
-    }
-    
-    if (category.children) {
-      const found = findCategoryInTree(categoryId, category.children)
-      if (found) return found
-    }
-  }
-  return null
-}
-
-const selectItem = (item) => {
+const selectItem = async (item) => {
   console.log('Selected item:', item);
-  // TODO: Open item details modal
-};
-
-const refreshData = async () => {
+  
+  // Load detailed item information
   try {
-    await refreshCache();
-    if (selectedCategory.value) {
-      categoryItems.value = await getCategoryItems(selectedCategory.value, 100);
-    }
+    const itemDetails = await getItemDetails(item.id);
+    console.log('Item details:', itemDetails);
+    // Here you can open a modal or navigate to item details page
   } catch (error) {
-    console.error('Failed to refresh data:', error);
+    console.error('Failed to load item details:', error);
   }
 };
 
@@ -352,15 +413,12 @@ watch(searchQuery, () => {
 });
 
 // Lifecycle
-onMounted(async () => {
+onMounted(() => {
   try {
     const saved = localStorage.getItem('theme')
     if (saved === 'light' || saved === 'dark') theme.value = saved
   } catch (_) {}
   document.documentElement.classList.toggle('dark', theme.value === 'dark');
-  
-  // Initialize market data
-  await initialize();
 });
 </script>
 
