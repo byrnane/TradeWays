@@ -1,17 +1,68 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { refreshAccessToken as esiRefreshToken } from '../services/esi.js'
+import { saveToStorage, removeFromStorage, STORAGE_KEYS, needsRefresh } from '../services/storage.js'
 
 export const useAuthStore = defineStore('auth', () => {
-  const characters = ref(JSON.parse(localStorage.getItem('esi_characters') || '[]'))
-  const currentCharacterId = ref(localStorage.getItem('esi_current_character_id') || null)
-  const characterData = ref(JSON.parse(localStorage.getItem('esi_character_data') || '{}'))
+  // State
+  const characters = ref([])
+  const currentCharacterId = ref(null)
+  const characterData = ref({})
   const isLoading = ref(false)
   const isRefreshing = ref(false)
+  const dataUpdateInterval = ref(null)
+  const isInitializing = ref(true) // Add initialization state
+  
+  // Helper functions
+  const saveCurrentCharacterId = () => {
+    if (currentCharacterId.value && currentCharacterId.value !== 'null') {
+      localStorage.setItem('esi_current_character_id', currentCharacterId.value.toString())
+    } else {
+      localStorage.removeItem('esi_current_character_id')
+    }
+  }
+  
+  // Load from localStorage (tokens are in memory only)
+  const loadFromStorage = () => {
+    try {
+      // Load characters metadata
+      const savedCharacters = localStorage.getItem('esi_characters')
+      if (savedCharacters) {
+        const parsed = JSON.parse(savedCharacters)
+        // Ensure character_id is a number
+        characters.value = parsed.map(char => ({
+          ...char,
+          character_id: parseInt(char.character_id)
+        }))
+      }
+      
+      // Load current character ID
+      const savedCurrentId = localStorage.getItem('esi_current_character_id')
+      if (savedCurrentId && savedCurrentId !== 'undefined' && savedCurrentId !== 'null') {
+        currentCharacterId.value = savedCurrentId
+      } else if (characters.value.length > 0) {
+        // If no current character ID but we have characters, select the first one
+        currentCharacterId.value = characters.value[0].character_id.toString()
+        saveCurrentCharacterId()
+        console.log('Auth store: Auto-selected first character:', currentCharacterId.value)
+      }
+      
+      // Load character data
+      const savedData = localStorage.getItem('esi_character_data')
+      if (savedData) {
+        characterData.value = JSON.parse(savedData)
+      }
+    } catch (error) {
+      console.error('Failed to load from storage:', error)
+    }
+  }
+  
+  // Initial load
+  loadFromStorage()
   
   // Get current character
   const character = computed(() => {
-    return characters.value.find(char => char.character_id.toString() === currentCharacterId.value) || null
+    return characters.value.find(char => char.character_id === parseInt(currentCharacterId.value)) || null
   })
   
   // Get current character's tokens
@@ -71,9 +122,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const switchCharacter = (characterId) => {
-    const char = characters.value.find(c => c.character_id.toString() === characterId.toString())
+    const char = characters.value.find(c => c.character_id === parseInt(characterId))
     if (char) {
-      currentCharacterId.value = characterId.toString()
+      currentCharacterId.value = char.character_id.toString()
       saveCurrentCharacterId()
       // Clear character data when switching
       characterData.value = {}
@@ -82,7 +133,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const removeCharacter = (characterId) => {
-    const index = characters.value.findIndex(char => char.character_id.toString() === characterId.toString())
+    const index = characters.value.findIndex(c => c.character_id === parseInt(characterId))
     if (index >= 0) {
       characters.value.splice(index, 1)
       
@@ -100,24 +151,43 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  // Save tokens to sessionStorage
+  const saveTokensToSession = () => {
+    const char = character.value
+    if (char && char.access_token) {
+      // Get all existing tokens
+      const allTokens = JSON.parse(sessionStorage.getItem('esi_session_tokens') || '{}')
+      
+      // Update tokens for current character
+      allTokens[char.character_id] = {
+        access_token: char.access_token,
+        refresh_token: char.refresh_token,
+        expires_at: char.expires_at
+      }
+      
+      // Save back
+      sessionStorage.setItem('esi_session_tokens', JSON.stringify(allTokens))
+    }
+  }
+
   const saveCharacters = () => {
-    // Don't save tokens to localStorage, save only character info
-    const charsToSave = characters.value.map(char => ({
-      character_id: char.character_id,
+    const charactersToSave = characters.value.map(char => ({
+      character_id: char.character_id, // Keep as number
       name: char.name,
       corporation_id: char.corporation_id,
       corporation_name: char.corporation_name,
       alliance_id: char.alliance_id,
       alliance_name: char.alliance_name,
       security_status: char.security_status,
-      // Note: tokens are kept in memory but not persisted
-      // They will be refreshed when needed
+      expires_at: char.expires_at
     }))
-    localStorage.setItem('esi_characters', JSON.stringify(charsToSave))
+    saveToStorage(STORAGE_KEYS.CHARACTERS, charactersToSave)
+    // Also save tokens to session
+    saveTokensToSession()
   }
 
-  const saveCurrentCharacterId = () => {
-    localStorage.setItem('esi_current_character_id', currentCharacterId.value)
+  const saveCharacterData = () => {
+    saveToStorage(STORAGE_KEYS.CHARACTER_DATA, characterData.value)
   }
 
   const setTokens = (token, refresh, expiresIn) => {
@@ -126,6 +196,8 @@ export const useAuthStore = defineStore('auth', () => {
       char.access_token = token
       char.refresh_token = refresh
       char.expires_at = Date.now() + (expiresIn * 1000)
+      // Save tokens to session
+      saveTokensToSession()
     }
   }
 
@@ -135,6 +207,8 @@ export const useAuthStore = defineStore('auth', () => {
       char.access_token = null
       char.refresh_token = null
       char.expires_at = null
+      // Update session storage
+      saveTokensToSession()
     }
   }
 
@@ -181,12 +255,79 @@ export const useAuthStore = defineStore('auth', () => {
 
   const setCharacterData = (data) => {
     characterData.value = data
-    localStorage.setItem('esi_character_data', JSON.stringify(data))
+    saveCharacterData()
+    saveToStorage(STORAGE_KEYS.LAST_UPDATE, Date.now())
   }
 
-  const updateCharacterData = (key, value) => {
-    characterData.value[key] = value
-    localStorage.setItem('esi_character_data', JSON.stringify(characterData.value))
+  const updateCharacterData = async () => {
+    if (!isAuthenticated.value || !character.value) return
+    
+    // Wait a bit for API to be available
+    let retries = 0
+    while (!window.__app_api__ && retries < 10) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+      retries++
+    }
+    
+    try {
+      // Use the global API instance
+      const api = window.__app_api__
+      if (!api) {
+        console.warn('API not available after waiting, skipping update')
+        return
+      }
+      
+      const characterId = character.value.character_id
+      
+      // Load data in parallel with error handling
+      const results = await Promise.allSettled([
+        api.characters.wallet.balance(characterId),
+        api.characters.location(characterId),
+        api.characters.online(characterId)
+      ])
+
+      const currentData = characterData.value || {}
+      const updatedData = {
+        ...currentData,
+        lastUpdated: Date.now()
+      }
+
+      // Handle each result individually
+      if (results[0].status === 'fulfilled') {
+        updatedData.wallet = results[0].value.data
+      } else {
+        console.error('Failed to load wallet:', results[0].reason)
+        // Keep old data if available
+        if (currentData.wallet) {
+          updatedData.wallet = currentData.wallet
+        }
+      }
+
+      if (results[1].status === 'fulfilled') {
+        updatedData.location = results[1].value.data
+      } else {
+        console.error('Failed to load location:', results[1].reason)
+        if (currentData.location) {
+          updatedData.location = currentData.location
+        }
+      }
+
+      if (results[2].status === 'fulfilled') {
+        updatedData.online = results[2].value.data
+      } else {
+        console.error('Failed to load online status:', results[2].reason)
+        if (currentData.online) {
+          updatedData.online = currentData.online
+        }
+      }
+
+      setCharacterData(updatedData)
+      
+      return updatedData
+    } catch (error) {
+      console.error('Failed to update character data:', error)
+      throw error
+    }
   }
 
   const logout = () => {
@@ -198,95 +339,191 @@ export const useAuthStore = defineStore('auth', () => {
     currentCharacterId.value = null
     
     // Clear localStorage
-    localStorage.removeItem('esi_character_data')
-    localStorage.removeItem('esi_current_character_id')
+    removeFromStorage(STORAGE_KEYS.CHARACTER_DATA)
+    removeFromStorage(STORAGE_KEYS.CURRENT_CHARACTER_ID)
   }
 
   const logoutAll = () => {
-    // Clear everything
+    // Clear all data
+    clearAll()
+  }
+
+  const clearAll = () => {
     characters.value = []
-    characterData.value = {}
     currentCharacterId.value = null
-    isLoading.value = false
-    isRefreshing.value = false
+    characterData.value = {}
     
-    localStorage.removeItem('esi_characters')
-    localStorage.removeItem('esi_character_data')
-    localStorage.removeItem('esi_current_character_id')
+    // Clear localStorage
+    removeFromStorage(STORAGE_KEYS.CHARACTERS)
+    removeFromStorage(STORAGE_KEYS.CURRENT_CHARACTER_ID)
+    removeFromStorage(STORAGE_KEYS.CHARACTER_DATA)
+    removeFromStorage(STORAGE_KEYS.LAST_UPDATE)
+    
+    // Clear sessionStorage
+    sessionStorage.removeItem('esi_session_tokens')
+    
+    // Stop periodic updates
+    stopPeriodicUpdates()
   }
 
-  // Initialize characters from localStorage (without tokens)
-  // Tokens will be refreshed when needed
-  const initializeCharacters = () => {
-    const savedChars = localStorage.getItem('esi_characters')
-    if (savedChars) {
-      characters.value = JSON.parse(savedChars)
-    }
-  }
-
-  // Auto-refresh mechanism
-  let refreshTimer = null
-
-  const startAutoRefresh = () => {
-    if (refreshTimer) {
-      clearInterval(refreshTimer)
-    }
-
-    // Check every minute if token needs refresh
-    refreshTimer = setInterval(async () => {
-      if (isAuthenticated.value && isTokenExpiringSoon.value && !isRefreshing.value) {
-        try {
-          await refreshAccessToken()
-        } catch (error) {
-          console.error('Auto-refresh failed:', error)
-          clearInterval(refreshTimer)
+  // Initialize store (synchronous part)
+  const initializeSync = () => {
+    loadFromStorage()
+    
+    // Restore tokens from sessionStorage
+    if (characters.value.length > 0 && currentCharacterId.value) {
+      const targetId = parseInt(currentCharacterId.value)
+      const currentChar = characters.value.find(char => char.character_id === targetId)
+      
+      if (currentChar) {
+        const sessionData = sessionStorage.getItem('esi_session_tokens')
+        
+        if (sessionData) {
+          try {
+            const allTokens = JSON.parse(sessionData)
+            const charTokens = allTokens[currentChar.character_id]
+            
+            if (charTokens) {
+              const charIndex = characters.value.findIndex(c => c.character_id === currentChar.character_id)
+              if (charIndex >= 0) {
+                characters.value[charIndex].access_token = charTokens.access_token
+                characters.value[charIndex].refresh_token = charTokens.refresh_token
+                characters.value[charIndex].expires_at = charTokens.expires_at
+              }
+            }
+          } catch (error) {
+            console.error('Failed to restore tokens from session:', error)
+          }
         }
       }
-    }, 60000) // Check every minute
+    }
   }
-
-  const stopAutoRefresh = () => {
-    if (refreshTimer) {
-      clearInterval(refreshTimer)
-      refreshTimer = null
+  
+  // Initialize async part (token refresh and data loading)
+  const initializeAsync = async () => {
+    if (characters.value.length > 0 && currentCharacterId.value) {
+      const currentChar = characters.value.find(char => 
+        char.character_id === parseInt(currentCharacterId.value)
+      )
+      
+      if (currentChar && currentChar.access_token) {
+        // Check if token needs refresh (only if actually expired)
+        const isExpired = Date.now() >= currentChar.expires_at
+        
+        if (isExpired) {
+          try {
+            await refreshAccessToken()
+          } catch (error) {
+            console.error('Failed to refresh token on init:', error)
+            // Remove expired character
+            removeCharacter(currentChar.character_id)
+            isInitializing.value = false
+            return
+          }
+        }
+        
+        // Always load character data on init
+        try {
+          console.log('Character ID from store:', currentChar.character_id)
+          console.log('Character ID from token sub:', currentChar.sub)
+          await updateCharacterData()
+        } catch (error) {
+          console.error('Failed to update character data on init:', error)
+          // Don't fail completely if ESI is down
+        }
+        
+        // Start periodic updates
+        startPeriodicUpdates()
+      } else {
+        // No valid tokens, clear current character
+        currentCharacterId.value = null
+        saveCurrentCharacterId()
+      }
+    }
+    
+    isInitializing.value = false
+    console.log('initializeAsync completed')
+  }
+  
+  // Get refresh interval from settings
+  const getRefreshInterval = () => {
+    try {
+      const settings = JSON.parse(localStorage.getItem('app_settings') || '{}')
+      return (settings.dataRefreshInterval || 10) * 60 * 1000
+    } catch (error) {
+      console.error('Failed to load refresh interval:', error)
+      return 10 * 60 * 1000 // Default 10 minutes
+    }
+  }
+  
+  // Start periodic data updates
+  const startPeriodicUpdates = () => {
+    if (dataUpdateInterval.value) {
+      clearInterval(dataUpdateInterval.value)
+    }
+    
+    const interval = getRefreshInterval()
+    dataUpdateInterval.value = setInterval(async () => {
+      if (isAuthenticated.value) {
+        try {
+          await updateCharacterData()
+        } catch (error) {
+          console.error('Failed to update character data periodically:', error)
+        }
+      }
+    }, interval)
+  }
+  
+  // Stop periodic updates
+  const stopPeriodicUpdates = () => {
+    if (dataUpdateInterval.value) {
+      clearInterval(dataUpdateInterval.value)
+      dataUpdateInterval.value = null
     }
   }
 
-  // Initialize
-  initializeCharacters()
+  // Initialize store (synchronous)
+  initializeSync()
   
   // Start auto-refresh when store is created
   if (isAuthenticated.value) {
-    startAutoRefresh()
+    startPeriodicUpdates()
   }
+  
+  // Initialize async part in background
+  initializeAsync()
 
   return {
     // State
     characters,
     currentCharacterId,
-    character,
     characterData,
+    isLoading,
+    isRefreshing,
+    isInitializing,
+    
+    // Computed
+    character,
     accessToken,
     refreshToken,
     expiresAt,
-    isLoading,
-    isRefreshing,
     isAuthenticated,
     isTokenExpired,
     isTokenExpiringSoon,
-    // Actions
+    
+    // Methods
     addCharacter,
     switchCharacter,
     removeCharacter,
     setTokens,
     clearTokens,
     refreshAccessToken,
-    getValidToken,
-    setCharacterData,
-    updateCharacterData,
     logout,
     logoutAll,
-    startAutoRefresh,
-    stopAutoRefresh
+    initializeAsync,
+    updateCharacterData,
+    setCharacterData,
+    startPeriodicUpdates,
+    stopPeriodicUpdates
   }
 })

@@ -11,7 +11,9 @@ export default {
     loading: 'Загрузка...',
     error: 'Ошибка',
     success: 'Успешно',
-    unknown: 'Неизвестно'
+    unknown: 'Неизвестно',
+    minutes: 'минут',
+    hour: 'час'
   },
   status: {
     active: 'Активна',
@@ -96,6 +98,11 @@ export default {
     themeLight: 'Светлая',
     themeDark: 'Темная',
     themeSystem: 'Системная',
+    autoRefresh: 'Автообновление токенов',
+    autoRefreshDescription: 'Автоматически обновлять токены доступа перед истечением срока',
+    dataRefresh: 'Обновление данных',
+    dataRefreshDescription: 'Автоматически обновлять данные персонажа с указанным интервалом',
+    refreshInterval: 'Интервал обновления',
     account: 'Аккаунт',
     accountSettings: 'Настройки аккаунта',
     esiManagement: 'Управление ESI токенами',

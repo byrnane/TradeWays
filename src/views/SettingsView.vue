@@ -54,29 +54,27 @@
           </div>
         </div>
 
-        <!-- Auto Refresh Settings -->
+        <!-- Data Refresh Settings -->
         <div class="bg-neutral-900 rounded-lg p-6 border border-neutral-800">
-          <h2 class="text-xl font-semibold text-neutral-100 mb-4">{{ $t('settings.autoRefresh') }}</h2>
-          <label class="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              v-model="autoRefresh"
-              class="w-5 h-5 rounded border-neutral-600 bg-neutral-800 text-accent focus:ring-accent focus:ring-offset-0"
-            />
-            <span class="text-neutral-300">{{ $t('settings.autoRefresh') }}</span>
-          </label>
+          <h2 class="text-xl font-semibold text-neutral-100 mb-4">{{ $t('settings.dataRefresh') }}</h2>
+          <p class="text-sm text-neutral-400 mb-4">{{ $t('settings.dataRefreshDescription') }}</p>
           
-          <div v-if="autoRefresh" class="mt-4">
-            <label class="block text-sm text-neutral-400 mb-2">
-              {{ $t('settings.refreshInterval') }}
-            </label>
-            <input
-              type="number"
-              v-model="refreshInterval"
-              min="5"
-              max="300"
-              class="w-32 px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-100 focus:outline-none focus:ring-2 focus:ring-accent"
-            />
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm text-neutral-300 mb-2">
+                {{ $t('settings.refreshInterval') }}
+              </label>
+              <select
+                v-model="dataRefreshInterval"
+                class="w-32 px-3 py-2 bg-neutral-800 border border-neutral-700 rounded-lg text-neutral-100 focus:outline-none focus:ring-2 focus:ring-accent"
+              >
+                <option :value="5">5 {{ $t('common.minutes') }}</option>
+                <option :value="10">10 {{ $t('common.minutes') }}</option>
+                <option :value="15">15 {{ $t('common.minutes') }}</option>
+                <option :value="30">30 {{ $t('common.minutes') }}</option>
+                <option :value="60">1 {{ $t('common.hour') }}</option>
+              </select>
+            </div>
           </div>
         </div>
 
@@ -97,44 +95,41 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAuthStore } from '../stores/auth.js'
 
 const { locale } = useI18n()
+const authStore = useAuthStore()
 
 const theme = ref('dark')
-const autoRefresh = ref(false)
-const refreshInterval = ref(30)
+const dataRefreshInterval = ref(10)
 
 const setLanguage = (lang) => {
   locale.value = lang
   localStorage.setItem('locale', lang)
 }
 
-const setTheme = (newTheme) => {
-  theme.value = newTheme
-  if (newTheme === 'light') {
-    document.documentElement.classList.remove('dark')
-  } else {
-    document.documentElement.classList.add('dark')
-  }
-  localStorage.setItem('theme', newTheme)
-}
-
 const saveSettings = () => {
-  localStorage.setItem('autoRefresh', autoRefresh.value)
-  localStorage.setItem('refreshInterval', refreshInterval.value)
-  // Show success message (you can add a toast notification here)
-  console.log('Settings saved')
+  // Save theme
+  localStorage.setItem('theme', theme.value)
+  document.documentElement.classList.toggle('dark', theme.value === 'dark')
+  
+  // Save data refresh interval
+  const settings = JSON.parse(localStorage.getItem('app_settings') || '{}')
+  settings.dataRefreshInterval = dataRefreshInterval.value
+  localStorage.setItem('app_settings', JSON.stringify(settings))
+  
+  // Restart periodic updates with new interval
+  if (authStore.isAuthenticated) {
+    authStore.stopPeriodicUpdates()
+    authStore.startPeriodicUpdates()
+  }
 }
 
 onMounted(() => {
   // Load saved settings
-  const savedTheme = localStorage.getItem('theme') || 'dark'
-  theme.value = savedTheme
+  theme.value = localStorage.getItem('theme') || 'dark'
   
-  const savedAutoRefresh = localStorage.getItem('autoRefresh') === 'true'
-  autoRefresh.value = savedAutoRefresh
-  
-  const savedRefreshInterval = localStorage.getItem('refreshInterval') || '30'
-  refreshInterval.value = parseInt(savedRefreshInterval)
+  const settings = JSON.parse(localStorage.getItem('app_settings') || '{}')
+  dataRefreshInterval.value = settings.dataRefreshInterval || 10
 })
 </script>

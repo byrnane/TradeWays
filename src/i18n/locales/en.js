@@ -11,7 +11,9 @@ export default {
     loading: 'Loading...',
     error: 'Error',
     success: 'Success',
-    unknown: 'Unknown'
+    unknown: 'Unknown',
+    minutes: 'minutes',
+    hour: 'hour'
   },
   status: {
     active: 'Active',
@@ -96,6 +98,11 @@ export default {
     themeLight: 'Light',
     themeDark: 'Dark',
     themeSystem: 'System',
+    autoRefresh: 'Auto Refresh Tokens',
+    autoRefreshDescription: 'Automatically refresh access tokens before they expire',
+    dataRefresh: 'Data Refresh',
+    dataRefreshDescription: 'Automatically refresh character data at specified intervals',
+    refreshInterval: 'Refresh Interval',
     account: 'Account',
     accountSettings: 'Account Settings',
     esiManagement: 'ESI Token Management',

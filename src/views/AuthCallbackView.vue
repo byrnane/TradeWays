@@ -34,7 +34,6 @@ import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { exchangeCodeForTokens, verifyToken } from '../services/esi.js'
-import { loadEssentialCharacterData } from '../services/character.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -106,15 +105,32 @@ onMounted(async () => {
     
     authStore.addCharacter(mergedCharacterData, tokenData)
     
-    // Start auto-refresh mechanism
-    authStore.startAutoRefresh()
-    
     // Load essential character data (wallet, location, etc.)
     try {
-      const essentialData = await loadEssentialCharacterData(
-        tokenData.access_token,
-        authCharacterData.character_id
-      )
+      // Load data using direct axios with token
+      const [wallet, location, online] = await Promise.all([
+        fetch(`https://esi.evetech.net/latest/characters/${authCharacterData.character_id}/wallet/`, {
+          headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+        }),
+        fetch(`https://esi.evetech.net/latest/characters/${authCharacterData.character_id}/location/`, {
+          headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+        }),
+        fetch(`https://esi.evetech.net/latest/characters/${authCharacterData.character_id}/online/`, {
+          headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+        })
+      ])
+      
+      const walletData = await wallet.json()
+      const locationData = await location.json()
+      const onlineData = await online.json()
+      
+      const essentialData = {
+        wallet: walletData,
+        location: locationData,
+        online: onlineData,
+        lastUpdated: Date.now()
+      }
+      
       authStore.setCharacterData(essentialData)
     } catch (dataError) {
       console.error('Failed to load character data:', dataError)
@@ -124,9 +140,8 @@ onMounted(async () => {
     characterName.value = mergedCharacterData.name
     success.value = true
     
-    setTimeout(() => {
-      router.push('/')
-    }, 2000)
+    // Redirect immediately
+    router.push('/')
     
   } catch (err) {
     console.error('Auth callback error:', err)
