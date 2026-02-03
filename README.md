@@ -1,6 +1,6 @@
-# TradeWay - EVE Online Trading Assistant
+# EVE Horizon - The Ultimate Toolkit for EVE Online
 
-Современное веб-приложение для помощи в торговле в EVE Online с интеграцией ESI API.
+Универсальный помощник для игроков EVE Online с интеграцией ESI API.
 
 ## Возможности
 
@@ -172,4 +172,4 @@ MIT License - см. файл LICENSE
 
 ---
 
-**TradeWay** - создано с ❤️ для пилотов EVE Online
+**EVE Horizon** - создано с ❤️ для пилотов EVE Online

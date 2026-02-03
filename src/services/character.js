@@ -1,6 +1,7 @@
-export const loadCharacterData = async (accessToken, characterId) => {
+export const loadCharacterData = async (accessToken, characterId, language = 'en') => {
   const headers = {
-    'Authorization': `Bearer ${accessToken}`
+    'Authorization': `Bearer ${accessToken}`,
+    'Accept-Language': language
   }
 
   try {
@@ -67,14 +68,14 @@ export const loadCharacterData = async (accessToken, characterId) => {
   }
 }
 
-const resolveNames = async (data) => {
+const resolveNames = async (data, language = 'en') => {
   try {
     const resolved = { ...data }
     
     // Resolve solar system name
     if (data.location?.solar_system_id) {
       try {
-        const systemResponse = await fetch(`https://esi.evetech.net/latest/universe/systems/${data.location.solar_system_id}/`)
+        const systemResponse = await fetch(`https://esi.evetech.net/latest/universe/systems/${data.location.solar_system_id}/?language=${language}`)
         if (systemResponse.ok) {
           const systemData = await systemResponse.json()
           resolved.location = {
@@ -90,7 +91,7 @@ const resolveNames = async (data) => {
     // Resolve ship type name
     if (data.shipType?.ship_type_id) {
       try {
-        const shipResponse = await fetch(`https://esi.evetech.net/latest/universe/types/${data.shipType.ship_type_id}/`)
+        const shipResponse = await fetch(`https://esi.evetech.net/latest/universe/types/${data.shipType.ship_type_id}/?language=${language}`)
         if (shipResponse.ok) {
           const shipData = await shipResponse.json()
           resolved.shipType = {
@@ -110,11 +111,12 @@ const resolveNames = async (data) => {
   }
 }
 
-export const loadFullCharacterData = async (accessToken, characterId) => {
+export const loadFullCharacterData = async (accessToken, characterId, language = 'en') => {
   try {
-    const response = await fetch(`https://esi.evetech.net/latest/characters/${characterId}/`, {
+    const response = await fetch(`https://esi.evetech.net/latest/characters/${characterId}/?language=${language}`, {
       headers: {
-        'Authorization': `Bearer ${accessToken}`
+        'Authorization': `Bearer ${accessToken}`,
+        'Accept-Language': language
       }
     })
     
@@ -129,7 +131,7 @@ export const loadFullCharacterData = async (accessToken, characterId) => {
   }
 }
 
-export const loadEssentialCharacterData = async (accessToken, characterId, forceRefresh = false) => {
+export const loadEssentialCharacterData = async (accessToken, characterId, language = 'en', forceRefresh = false) => {
   // Check cache first
   const cacheKey = `character_data_${characterId}`
   const cachedData = localStorage.getItem(cacheKey)
@@ -144,7 +146,8 @@ export const loadEssentialCharacterData = async (accessToken, characterId, force
   }
 
   const headers = {
-    'Authorization': `Bearer ${accessToken}`
+    'Authorization': `Bearer ${accessToken}`,
+    'Accept-Language': language
   }
 
   try {
@@ -165,7 +168,7 @@ export const loadEssentialCharacterData = async (accessToken, characterId, force
     }
     
     // Resolve IDs to names
-    const resolvedResult = await resolveNames(result)
+    const resolvedResult = await resolveNames(result, language)
     
     // Cache the result with timestamp
     localStorage.setItem(cacheKey, JSON.stringify(resolvedResult))

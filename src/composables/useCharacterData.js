@@ -1,11 +1,13 @@
 import { onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
 import { useUIStore } from '../stores/ui.js'
+import { useI18n } from 'vue-i18n'
 import { loadEssentialCharacterData, loadFullCharacterData } from '../services/character.js'
 
 export function useCharacterData() {
   const authStore = useAuthStore()
   const uiStore = useUIStore()
+  const { locale } = useI18n()
 
   const loadCharacterData = async (forceRefresh = false) => {
     if (!authStore.isAuthenticated || !authStore.character) {
@@ -31,7 +33,7 @@ export function useCharacterData() {
       
       // Load full character data if missing security status
       if (!authStore.character?.security_status) {
-        const fullCharacterData = await loadFullCharacterData(token, characterId)
+        const fullCharacterData = await loadFullCharacterData(token, characterId, locale.value)
         
         // Merge with existing character data
         const mergedCharacterData = {
@@ -43,7 +45,7 @@ export function useCharacterData() {
       }
       
       // Load essential data (wallet, location, etc.)
-      const essentialData = await loadEssentialCharacterData(token, characterId, forceRefresh)
+      const essentialData = await loadEssentialCharacterData(token, characterId, locale.value, forceRefresh)
       
       authStore.setCharacterData(essentialData)
       uiStore.updateDataTimestamp()

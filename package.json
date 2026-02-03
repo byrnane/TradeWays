@@ -1,18 +1,19 @@
 {
-  "name": "tradeway",
+  "name": "eve-horizon",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Minimal EVE Online trade helper UI (Vue 3 + Vite + Tailwind)",
+  "description": "The Ultimate Toolkit for EVE Online UI (Vue 3 + Vite + Tailwind)",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview --port 5173"
   },
   "dependencies": {
+    "pinia": "^2.1.0",
     "vue": "^3.4.0",
-    "vue-router": "^4.2.0",
-    "pinia": "^2.1.0"
+    "vue-i18n": "^9.14.5",
+    "vue-router": "^4.2.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",

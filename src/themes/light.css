@@ -1,0 +1,195 @@
+/* Light theme styles */
+.light {
+  color-scheme: light;
+}
+
+.light body {
+  background-color: #fafafa;
+  color: #1f2937;
+}
+
+/* Light theme - Header */
+.light .bg-neutral-900 {
+  background-color: #ffffff !important;
+}
+
+.light .bg-neutral-900\/95 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.light .border-neutral-800 {
+  border-color: #e5e7eb !important;
+}
+
+.light .text-neutral-100 {
+  color: #1f2937 !important;
+}
+
+.light .text-neutral-200 {
+  color: #374151 !important;
+}
+
+.light .text-neutral-300 {
+  color: #4b5563 !important;
+}
+
+.light .text-neutral-400 {
+  color: #6b7280 !important;
+}
+
+.light .text-neutral-500 {
+  color: #9ca3af !important;
+}
+
+.light .hover\:text-neutral-100:hover {
+  color: #1f2937 !important;
+}
+
+/* Light theme - Sidebar */
+.light .bg-neutral-900 {
+  background-color: #ffffff !important;
+}
+
+.light .bg-neutral-800 {
+  background-color: #f9fafb !important;
+}
+
+.light .hover\:bg-neutral-800:hover {
+  background-color: #f3f4f6 !important;
+}
+
+.light .bg-neutral-800\/60 {
+  background-color: rgba(249, 250, 251, 0.6) !important;
+}
+
+.light .hover\:bg-neutral-700\/60:hover {
+  background-color: rgba(243, 244, 246, 0.6) !important;
+}
+
+/* Light theme - Cards */
+.light .bg-neutral-900 {
+  background-color: #ffffff !important;
+}
+
+.light .bg-neutral-900\/60 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.light .bg-neutral-800 {
+  background-color: #f9fafb !important;
+}
+
+.light .bg-neutral-800\/50 {
+  background-color: rgba(249, 250, 251, 0.5) !important;
+}
+
+/* Light theme - Inputs */
+.light .bg-neutral-800 {
+  background-color: #f9fafb !important;
+}
+
+.light .border-neutral-700 {
+  border-color: #d1d5db !important;
+}
+
+.light .border-neutral-800 {
+  border-color: #e5e7eb !important;
+}
+
+.light .focus\:border-accent:focus {
+  border-color: #3b82f6 !important;
+}
+
+.light .focus\:ring-accent:focus {
+  --tw-ring-color: #3b82f6 !important;
+}
+
+/* Light theme - Background */
+.light .bg-neutral-950 {
+  background-color: #fafafa !important;
+}
+
+.light .bg-neutral-900\/10 {
+  background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Light theme - Accent colors */
+.light .text-accent {
+  color: #3b82f6 !important;
+}
+
+.light .bg-accent\/10 {
+  background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+.light .bg-accent\/20 {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.light .border-accent\/20 {
+  border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.light .border-accent\/50 {
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+.light .hover\:bg-accent\/20:hover {
+  background-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+.light .hover\:border-accent\/50:hover {
+  border-color: rgba(59, 130, 246, 0.5) !important;
+}
+
+.light .text-accent {
+  color: #3b82f6 !important;
+}
+
+/* Light theme - Shadow */
+.light .shadow-soft {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+.light .shadow-lg {
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Light theme - Ring */
+.light .ring-neutral-700 {
+  --tw-ring-color: #d1d5db !important;
+}
+
+/* Light theme - Backdrop blur */
+.light .backdrop-blur-sm {
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Light theme - Success/Error colors */
+.light .text-green-400 {
+  color: #10b981 !important;
+}
+
+.light .text-red-300 {
+  color: #ef4444 !important;
+}
+
+.light .text-red-400 {
+  color: #ef4444 !important;
+}
+
+.light .bg-red-900\/20 {
+  background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+.light .bg-red-900\/30 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+.light .border-red-800\/50 {
+  border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+.light .hover\:bg-red-900\/30:hover {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}

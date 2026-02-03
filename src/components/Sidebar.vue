@@ -1,26 +1,22 @@
 <template>
-  <div class="fixed inset-y-0 left-0 z-50 w-64 bg-neutral-900 border-r border-neutral-800 transform transition-transform duration-200 ease-in-out" 
+  <div class="fixed top-20 left-0 bottom-0 z-30 w-64 bg-neutral-900 border-r border-neutral-800 transform transition-transform duration-200 ease-in-out" 
        :class="isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'">
-    <!-- Header -->
-    <div class="flex items-center justify-between p-4 border-b border-neutral-800">
-      <router-link to="/" class="flex items-center gap-3">
-        <div class="grid h-9 w-9 place-items-center rounded-lg bg-neutral-800 ring-1 ring-neutral-700 shadow-soft text-neutral-200 font-semibold">
-          TW
-        </div>
-        <div>
-          <h1 class="text-xl font-semibold tracking-tight">TradeWay</h1>
-          <p class="text-sm text-neutral-400">Trading Tools</p>
-        </div>
-      </router-link>
-      <button @click="$emit('close')" class="lg:hidden p-2 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-        </svg>
-      </button>
-    </div>
-
     <!-- Navigation -->
     <nav class="p-4 space-y-2">
+      <!-- Mobile Close Button -->
+      <div class="flex justify-end lg:hidden mb-4">
+        <button @click="$emit('close')" class="p-2 rounded-md text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Navigation Title -->
+      <h3 class="px-3 text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-2">
+        {{ $t('nav.menu') }}
+      </h3>
+
       <router-link
         v-for="item in navigation"
         :key="item.name"
@@ -82,8 +78,8 @@ const uiStore = useUIStore();
 
 const navigation = [
   {
-    name: 'Профиль',
-    href: '/',
+    name: 'Калькуляторы',
+    href: '/calculators',
     icon: () => h('svg', { 
       xmlns: 'http://www.w3.org/2000/svg', 
       fill: 'none', 
@@ -94,24 +90,7 @@ const navigation = [
       h('path', { 
         'stroke-linecap': 'round', 
         'stroke-linejoin': 'round', 
-        d: 'M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z' 
-      })
-    ])
-  },
-  {
-    name: 'Рынок',
-    href: '/market',
-    icon: () => h('svg', { 
-      xmlns: 'http://www.w3.org/2000/svg', 
-      fill: 'none', 
-      viewBox: '0 0 24 24', 
-      stroke: 'currentColor',
-      'stroke-width': '1.5'
-    }, [
-      h('path', { 
-        'stroke-linecap': 'round', 
-        'stroke-linejoin': 'round', 
-        d: 'M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z' 
+        d: 'M9 7.5h3m3 0h3m-3 0h-3m-3 0H3.375a1.125 1.125 0 0 1-1.125-1.125V4.875c0-.621.504-1.125 1.125-1.125h17.25c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125Zm-12 0v6m0 0v3.75A1.875 1.875 0 0 0 9.375 18h5.25A1.875 1.875 0 0 0 16.5 16.125v-3.75m-12 0H3.375a1.125 1.125 0 0 1-1.125-1.125V9.375c0-.621.504-1.125 1.125-1.125h17.25c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125Z' 
       })
     ])
   }
