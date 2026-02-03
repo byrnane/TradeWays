@@ -2,25 +2,31 @@ import { computed } from 'vue'
 
 export function useCharacterLocation(character) {
   const getFullLocation = (char) => {
-    if (!char || !char.location) return null
+    if (!char) return null
     
     const parts = []
     
+    // Get system name from multiple sources
+    const systemName = char.location?.solar_system_name || 
+                      char.locationName || 
+                      char.system_name ||
+                      'Unknown System'
+    
     // Add station if character is in one
-    if (char.location.station_name) {
-      parts.push(char.location.station_name)
-      parts.push(char.location.solar_system_name || char.locationName || 'Unknown System')
+    if (char.location?.station_name || char.station_name) {
+      parts.push(char.location?.station_name || char.station_name)
+      parts.push(systemName)
     } else {
-      parts.push(char.location.solar_system_name || char.locationName || 'Unknown System')
+      parts.push(systemName)
     }
     
     // Add constellation and region
-    if (char.location.constellation_name || char.constellationName) {
-      parts.push(char.location.constellation_name || char.constellationName)
+    if (char.location?.constellation_name || char.constellationName) {
+      parts.push(char.location?.constellation_name || char.constellationName)
     }
     
-    if (char.location.region_name || char.regionName) {
-      parts.push(char.location.region_name || char.regionName)
+    if (char.location?.region_name || char.regionName) {
+      parts.push(char.location?.region_name || char.regionName)
     }
     
     return parts
@@ -35,20 +41,15 @@ export function useCharacterLocation(character) {
     if (!character) return 'Unknown'
     
     // Show station if in one
-    if (character.location && character.location.station_name) {
-      return character.location.station_name
+    if (character.location?.station_name || character.station_name) {
+      return character.location?.station_name || character.station_name
     }
     
-    // Otherwise show system name
-    if (character.locationName) {
-      return character.locationName
-    }
-    
-    if (character.location && character.location.solar_system_name) {
-      return character.location.solar_system_name
-    }
-    
-    return 'Unknown'
+    // Otherwise show system name from multiple sources
+    return character.location?.solar_system_name || 
+           character.locationName || 
+           character.system_name ||
+           'Unknown'
   })
   
   const locationParts = computed(() => {

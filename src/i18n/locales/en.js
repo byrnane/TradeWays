@@ -24,14 +24,20 @@ export default {
     expiresInHours: 'Expires in {hours}h {minutes}m',
     expiresInMinutes: 'Expires in {minutes}m'
   },
+  location: {
+    inSpace: 'In Space'
+  },
   nav: {
     title: 'EVE Horizon',
     subtitle: 'The Ultimate Toolkit for EVE Online',
     menu: 'Menu',
-    home: 'Home',
+    dashboard: 'Dashboard',
     profiles: 'Characters',
     calculators: 'Calculators',
     settings: 'Settings'
+  },
+  dashboard: {
+    welcome: 'Welcome back'
   },
   home: {
     unlockPotential: 'Unlock Full Potential',
@@ -68,13 +74,22 @@ export default {
     allCharacters: 'All Characters'
   },
   profiles: {
-    manageCharacters: 'Manage your connected characters',
-    noCharacters: 'No characters connected',
+    manageCharacters: 'Manage your characters',
+    switch: 'Switch',
+    select: 'Select',
+    currentCharacter: 'Current Character',
+    confirmRemove: 'Are you sure you want to remove {name}?',
+    noCharacters: 'No characters',
     addFirstCharacter: 'Add your first character to get started',
-    switchTo: 'Switch To',
-    currentlyActive: 'Currently Active',
-    addAnotherCharacter: 'Add another character to your account',
-    confirmRemove: 'Are you sure you want to remove {name}?'
+    addAnotherCharacter: 'Add another character',
+    pageHeader: 'Character Profiles',
+    lastUpdate: 'Last update',
+    timeToUpdate: 'Time to update',
+    never: 'Never',
+    justNow: 'Just now',
+    minutesAgo: '{minutes} min ago',
+    hoursAgo: '{hours} hours ago',
+    daysAgo: '{days} days ago'
   },
   calculators: {
     title: 'Calculators',
@@ -90,7 +105,10 @@ export default {
       roi: 'ROI (Return on Investment)',
       calculate: 'Calculate',
       clear: 'Clear',
-      results: 'Results'
+      results: 'Results',
+      totalCost: 'Total Cost',
+      enterPrice: 'Enter price',
+      enterQuantity: 'Enter quantity'
     }
   },
   settings: {
@@ -104,8 +122,13 @@ export default {
     autoRefreshDescription: 'Automatically refresh access tokens before they expire',
     dataRefresh: 'Data Refresh',
     dataRefreshDescription: 'Automatically refresh character data at specified intervals',
-    refreshInterval: 'Refresh Interval',
+    refreshInterval: 'Data Refresh Interval',
+    seconds: 'seconds',
+    minute: 'minute',
+    minutes: 'minutes',
+    saved: 'Settings saved successfully!',
     account: 'Account',
+    loggedInAs: 'Logged in as',
     accountSettings: 'Account Settings',
     esiManagement: 'ESI Token Management',
     activeTokens: 'Active Tokens',

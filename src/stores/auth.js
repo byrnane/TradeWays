@@ -210,11 +210,20 @@ export const useAuthStore = defineStore('auth', () => {
         character.value = char
       }
       
-      // Clear character data when switching
-      characterData.value = {}
-      localStorage.removeItem('esi_character_data')
-      // Clear last update timestamp to force refresh
-      localStorage.removeItem('esi_last_update')
+      // Load character data from localStorage instead of clearing it
+      const dataKey = `character_data_${characterId}`
+      const storedData = localStorage.getItem(dataKey)
+      if (storedData) {
+        try {
+          characterData.value = JSON.parse(storedData)
+        } catch (error) {
+          console.error('Failed to load character data:', error)
+          characterData.value = {}
+        }
+      } else {
+        characterData.value = {}
+      }
+      
       // Stop periodic updates and restart them
       stopPeriodicUpdates()
       if (isAuthenticated.value) {

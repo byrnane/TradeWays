@@ -24,8 +24,11 @@
 
 <script setup>
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUIStore } from '../stores/ui.js'
 import { useRouter } from 'vue-router'
+
+const { t } = useI18n()
 
 const uiStore = useUIStore()
 const router = useRouter()
@@ -104,7 +107,7 @@ onMounted(() => {
       return
     }
     
-    uiStore.startLoading('Загрузка страницы...')
+    uiStore.startLoading(t('common.loading'))
     
     // Small delay to ensure the progress bar is visible
     setTimeout(() => {

@@ -29,6 +29,7 @@ module.exports = {
         accent: {
           DEFAULT: '#7dd3fc',
           600: '#38bdf8',
+          dark: '#0c4a6e', // Dark text for light backgrounds
         },
       },
       boxShadow: {

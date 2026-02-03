@@ -1,6 +1,6 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
-import { esiCharacterWallet, esiCharacterLocation, esiCharacterOnline, esiUniverseNames, esiUniverseSystem, esiUniverseConstellation } from '../services/esi.js'
+import { esiCharacterWallet, esiCharacterLocation, esiCharacterOnline, esiCharacterSheet, esiUniverseNames, esiUniverseSystem, esiUniverseConstellation } from '../services/esi.js'
 
 // Shared state for singleton pattern
 const isRefreshing = ref({})
@@ -29,6 +29,10 @@ export function useAllCharactersData() {
     if (stored) {
       try {
         const data = JSON.parse(stored)
+        // Add lastUpdated if it doesn't exist (for old data)
+        if (!data.lastUpdated) {
+          data.lastUpdated = Date.now()
+        }
         allCharactersData.value[characterId] = data
         return data
       } catch (e) {
@@ -147,7 +151,7 @@ export function useAllCharactersData() {
       let existingData = getCharacterData(characterId) || {}
       
       // Fetch all data in parallel
-      const [wallet, location, online] = await Promise.all([
+      const [wallet, location, online, characterSheet] = await Promise.all([
         esiCharacterWallet(characterId, token.access_token).catch(e => {
           console.error('Failed to load wallet:', e)
           return existingData.wallet
@@ -159,7 +163,14 @@ export function useAllCharactersData() {
         esiCharacterOnline(characterId, token.access_token).catch(e => {
           console.error('Failed to load online status:', e)
           return existingData.online
-        })
+        }),
+        // Only fetch character sheet if we don't have security status or it's old (24 hours)
+        (!existingData.security_status || !existingData.securityUpdated || Date.now() - existingData.securityUpdated > 86400000)
+          ? esiCharacterSheet(characterId, token.access_token).catch(e => {
+              console.error('Failed to load character sheet:', e)
+              return null
+            })
+          : Promise.resolve(null)
       ])
       
       // Update data
@@ -167,8 +178,15 @@ export function useAllCharactersData() {
         ...existingData,
         wallet: wallet,
         location: location,
-        online: online,
-        locationName: null // Will be filled below
+        online: typeof online === 'boolean' ? online : (online === 'true' || online === true), // Ensure boolean
+        locationName: null, // Will be filled below
+        lastUpdated: Date.now() // Add timestamp of last update
+      }
+      
+      // Update security status if we got new data
+      if (characterSheet) {
+        updatedData.security_status = characterSheet.security_status
+        updatedData.securityUpdated = Date.now()
       }
       
       // Get location name if we have location data
@@ -176,6 +194,12 @@ export function useAllCharactersData() {
         try {
           // Get system information which includes constellation
           const systemInfo = await esiUniverseSystem(updatedData.location.solar_system_id, token.access_token)
+          
+          // Save system security status
+          if (systemInfo.security_status !== undefined) {
+            updatedData.system_security_status = systemInfo.security_status
+            updatedData.location.system_security_status = systemInfo.security_status
+          }
           
           // Get constellation information to find region
           const constellationInfo = await esiUniverseConstellation(systemInfo.constellation_id, token.access_token)

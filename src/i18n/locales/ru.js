@@ -24,14 +24,20 @@ export default {
     expiresInHours: 'Истекает через {hours}ч {minutes}м',
     expiresInMinutes: 'Истекает через {minutes}м'
   },
+  location: {
+    inSpace: 'В космосе'
+  },
   nav: {
     title: 'EVE Horizon',
     subtitle: 'Все инструменты для EVE Online в одном месте',
     menu: 'Меню',
-    home: 'Главная',
+    dashboard: 'Дашборд',
     profiles: 'Персонажи',
     calculators: 'Калькуляторы',
     settings: 'Настройки'
+  },
+  dashboard: {
+    welcome: 'С возвращением'
   },
   home: {
     unlockPotential: 'Откройте все возможности',
@@ -68,13 +74,22 @@ export default {
     allCharacters: 'Все персонажи'
   },
   profiles: {
-    manageCharacters: 'Управление подключенными персонажами',
-    noCharacters: 'Нет подключенных персонажей',
-    addFirstCharacter: 'Добавьте первого персонажа для начала работы',
-    switchTo: 'Переключиться',
-    currentlyActive: 'Сейчас активен',
-    addAnotherCharacter: 'Добавить еще одного персонажа в аккаунт',
-    confirmRemove: 'Вы уверены, что хотите убрать {name}?'
+    manageCharacters: 'Управление персонажами',
+    switch: 'Переключить',
+    select: 'Выбрать',
+    currentCharacter: 'Текущий персонаж',
+    confirmRemove: 'Вы уверены, что хотите удалить {name}?',
+    noCharacters: 'Нет персонажей',
+    addFirstCharacter: 'Добавьте первого персонажа для начала',
+    addAnotherCharacter: 'Добавить еще одного персонажа',
+    pageHeader: 'Профили персонажей',
+    lastUpdate: 'Последнее обновление',
+    timeToUpdate: 'До обновления',
+    never: 'Никогда',
+    justNow: 'Только что',
+    minutesAgo: '{minutes} мин назад',
+    hoursAgo: '{hours} ч назад',
+    daysAgo: '{days} д назад'
   },
   calculators: {
     title: 'Калькуляторы',
@@ -83,14 +98,17 @@ export default {
       buyPrice: 'Цена покупки',
       sellPrice: 'Цена продажи',
       quantity: 'Количество',
-      brokerFee: 'Комиссия брокера',
+      brokerFee: 'Брокерская комиссия',
       transactionTax: 'Налог на сделку',
       profit: 'Прибыль',
       profitMargin: 'Маржа прибыли',
-      roi: 'ROI (возврат инвестиций)',
+      roi: 'ROI (Возврат инвестиций)',
       calculate: 'Рассчитать',
       clear: 'Очистить',
-      results: 'Результаты'
+      results: 'Результаты',
+      totalCost: 'Общие затраты',
+      enterPrice: 'Введите цену',
+      enterQuantity: 'Введите количество'
     }
   },
   settings: {
@@ -104,9 +122,14 @@ export default {
     autoRefreshDescription: 'Автоматически обновлять токены доступа перед истечением срока',
     dataRefresh: 'Обновление данных',
     dataRefreshDescription: 'Автоматически обновлять данные персонажа с указанным интервалом',
-    refreshInterval: 'Интервал обновления',
+    refreshInterval: 'Интервал обновления данных',
+    seconds: 'секунд',
+    minute: 'минута',
+    minutes: 'минут',
+    saved: 'Настройки успешно сохранены!',
     account: 'Аккаунт',
     accountSettings: 'Настройки аккаунта',
+    loggedInAs: 'Вы вошли как',
     esiManagement: 'Управление ESI токенами',
     activeTokens: 'Активные токены',
     tokenExpires: 'Токен истекает',

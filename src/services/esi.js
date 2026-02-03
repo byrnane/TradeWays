@@ -89,6 +89,16 @@ export const esiCharacterOnline = async (characterId, accessToken) => {
   return response.data
 }
 
+export const esiCharacterSheet = async (characterId, accessToken) => {
+  const response = await axios.get(`https://esi.evetech.net/latest/characters/${characterId}/`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'User-Agent': `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
+    }
+  })
+  return response.data
+}
+
 export const esiUniverseNames = async (ids, accessToken) => {
   const response = await axios.post(`https://esi.evetech.net/latest/universe/names/`, ids, {
     headers: {

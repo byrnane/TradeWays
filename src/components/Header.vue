@@ -1,6 +1,6 @@
 <template>
-  <header class="fixed top-0 left-0 right-0 z-40 bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-800">
-    <div class="flex items-center justify-between px-6 py-4">
+  <header class="fixed top-0 left-0 right-0 z-40 h-[73px] bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-800">
+    <div class="flex items-center justify-between h-full px-6">
       <!-- Left Section -->
       <div class="flex items-center gap-4">
         <!-- Mobile Menu Button -->
@@ -130,12 +130,17 @@
               @error="handleImageError"
             />
             <div class="hidden sm:block text-left">
-              <div class="font-medium text-neutral-100">{{ authStore.character.name }}</div>
+              <div class="flex items-center justify-between gap-2">
+                <div class="font-medium text-neutral-100">{{ authStore.character.name }}</div>
+                <div class="text-xs font-mono text-neutral-500">
+                  <UpdateTimer :initial-time="60" :is-loading="authStore.isRefreshing" :compact="true" />
+                </div>
+              </div>
               <div class="text-sm text-neutral-400">{{ authStore.character.corporation_name }}</div>
               <div class="flex items-center gap-2 mt-1">
                 <CharacterStatus :character="authStore.characterData" />
                 <div class="text-xs text-neutral-500">
-                  <UpdateTimer :initial-time="60" :is-loading="authStore.isRefreshing" :compact="true" />
+                  <CharacterLocation :character="authStore.characterData" view-mode="system" />
                 </div>
               </div>
             </div>
@@ -144,40 +149,39 @@
           
           <!-- Profile Dropdown -->
           <div v-if="profileDropdownOpen" class="absolute right-0 top-full mt-2 w-80 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg py-2">
-            <!-- Current Profile Header (clickable) -->
-            <button 
-              @click.stop="switchCharacter(authStore.character)"
-              class="w-full px-4 py-3 border-b border-neutral-700 hover:bg-neutral-700/50 transition-colors"
-            >
-              <div class="flex items-center gap-3">
-                <img 
-                  :src="`https://images.evetech.net/characters/${authStore.character.character_id}/portrait?size=64&tenant=tranquility`"
-                  :alt="authStore.character.name"
-                  class="h-12 w-12 rounded-full border-2 border-neutral-600"
-                  @error="handleImageError"
-                  crossorigin="anonymous"
-                  referrerpolicy="no-referrer"
-                />
-                <div class="flex-1 text-left">
-                  <div class="font-medium text-neutral-100">{{ authStore.character.name }}</div>
-                  <div class="text-sm text-neutral-400">{{ authStore.character.corporation_name }}</div>
-                  <div class="flex items-center gap-2 mt-1">
-                    <CharacterStatus :character="authStore.characterData" />
-                    <div class="text-xs text-neutral-500">
-                      <CharacterLocation :character="authStore.characterData" :show-full="false" :show-details="false" />
+            <!-- Character List -->
+            <div v-if="authStore.characters.length > 0" class="py-2 max-h-60 overflow-y-auto">
+              <div v-for="char in authStore.characters" :key="char.character_id">
+                <div v-if="char.character_id === authStore.character.character_id" 
+                     class="w-full px-4 py-3 text-left text-sm bg-neutral-700/50 flex items-center gap-3 cursor-not-allowed opacity-75">
+                  <img 
+                    :src="`https://images.evetech.net/characters/${char.character_id}/portrait?size=32&tenant=tranquility`"
+                    :alt="char.name"
+                    class="h-8 w-8 rounded-full"
+                    @error="handleImageError"
+                    crossorigin="anonymous"
+                    referrerpolicy="no-referrer"
+                  />
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="font-medium text-neutral-100">{{ char.name }}</div>
+                      <div class="text-xs font-mono text-neutral-500">
+                        <UpdateTimer :last-update="allCharactersData.getCharacterData(char.character_id)?.lastUpdated" :compact="true" />
+                      </div>
+                    </div>
+                    <div class="text-xs text-neutral-400">{{ char.corporation_name }}</div>
+                    <div class="flex items-center gap-3 mt-1">
+                      <CharacterStatus :character="getCharacterData(char.character_id)" />
+                      <div class="text-xs text-neutral-500">
+                        <CharacterLocation :character="getCharacterData(char.character_id)" view-mode="system" />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </button>
-            
-            <!-- Character List -->
-            <div v-if="authStore.characters.length > 1" class="py-2 max-h-60 overflow-y-auto">
-              <div v-for="char in authStore.characters" :key="char.character_id">
                 <button
+                  v-else
                   @click.stop="switchCharacter(char)"
-                  class="w-full px-4 py-2 text-left text-sm hover:bg-neutral-700 flex items-center gap-3"
-                  :class="{ 'bg-neutral-700/30': char.character_id === authStore.character.character_id }"
+                  class="w-full px-4 py-3 text-left text-sm hover:bg-neutral-700 flex items-center gap-3"
                 >
                   <img 
                     :src="`https://images.evetech.net/characters/${char.character_id}/portrait?size=32&tenant=tranquility`"
@@ -188,10 +192,18 @@
                     referrerpolicy="no-referrer"
                   />
                   <div class="flex-1">
-                    <div class="font-medium text-neutral-100">{{ char.name }}</div>
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="font-medium text-neutral-100">{{ char.name }}</div>
+                      <div class="text-xs font-mono text-neutral-500">
+                        <UpdateTimer :last-update="allCharactersData.getCharacterData(char.character_id)?.lastUpdated" :compact="true" />
+                      </div>
+                    </div>
                     <div class="text-xs text-neutral-400">{{ char.corporation_name }}</div>
-                    <div class="mt-1">
+                    <div class="flex items-center gap-3 mt-1">
                       <CharacterStatus :character="getCharacterData(char.character_id)" />
+                      <div class="text-xs text-neutral-500">
+                        <CharacterLocation :character="getCharacterData(char.character_id)" view-mode="system" />
+                      </div>
                     </div>
                   </div>
                 </button>
@@ -281,7 +293,25 @@ const currentLocale = computed(() => locale.value)
 const currentTheme = computed(() => settingsStore.theme)
 
 const getCharacterData = (characterId) => {
-  return allCharactersData.getCharacterData(characterId)
+  // Always check localStorage first for immediate data
+  const dataKey = `character_data_${characterId}`
+  const stored = localStorage.getItem(dataKey)
+  let data = null
+  
+  if (stored) {
+    try {
+      data = JSON.parse(stored)
+    } catch (e) {
+      console.error('Failed to parse character data:', e)
+    }
+  }
+  
+  // If not in localStorage, try allCharactersData
+  if (!data) {
+    data = allCharactersData.getCharacterData(characterId)
+  }
+  
+  return data || {}
 }
 
 const themeIcon = computed(() => {
@@ -325,11 +355,11 @@ const setTheme = (theme) => {
   themeDropdownOpen.value = false
 }
 
-const switchCharacter = (character) => {
-  authStore.switchCharacter(character.character_id)
+const switchCharacter = async (character) => {
   profileDropdownOpen.value = false
-  // Reload the page to refresh all data
-  window.location.reload()
+  await authStore.switchCharacter(character.character_id)
+  // Update data for the new character
+  await allCharactersData.updateCharacterData(character.character_id)
 }
 
 const addNewProfile = () => {
@@ -370,6 +400,11 @@ onMounted(() => {
   
   // Initialize theme
   const cleanup = settingsStore.initTheme()
+  
+  // Load data for all characters if authenticated
+  if (authStore.isAuthenticated && authStore.characters.length > 0) {
+    allCharactersData.updateAllCharactersData(authStore.characters)
+  }
   
   document.addEventListener('click', closeDropdowns)
   

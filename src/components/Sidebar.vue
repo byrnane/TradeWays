@@ -63,7 +63,7 @@ const { t } = useI18n();
 
 const navigation = computed(() => [
   {
-    name: t('nav.home'),
+    name: t('nav.dashboard'),
     href: '/',
     icon: HomeIcon
   },

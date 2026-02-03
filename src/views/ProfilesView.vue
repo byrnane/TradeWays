@@ -1,137 +1,137 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-b from-neutral-950 to-neutral-900">
-    <!-- Header -->
-    <div class="px-6 py-8 border-b border-neutral-800">
-      <h1 class="text-3xl font-bold text-neutral-100">{{ $t('profile.allCharacters') }}</h1>
-      <p class="text-neutral-400 mt-2">{{ $t('profiles.manageCharacters') }}</p>
-    </div>
-
+  <div v-if="authStore.isAuthenticated" class="space-y-6">
     <!-- Characters Grid -->
-    <div class="p-6">
-      <div v-if="authStore.characters.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        <!-- Character Cards -->
-        <div 
-          v-for="char in authStore.characters" 
-          :key="char.character_id"
-          class="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden hover:border-accent/50 transition-colors group"
-          :class="{ 'ring-2 ring-accent/50': char.character_id === authStore.currentCharacterId }"
-        >
-          <div class="relative">
-            <img 
-              :src="`https://images.evetech.net/characters/${char.character_id}/portrait?size=256&tenant=tranquility`"
-              :alt="char.name"
-              class="w-full h-48 object-cover"
-              @error="handleImageError"
-              crossorigin="anonymous"
-              referrerpolicy="no-referrer"
-            />
-            <div class="absolute top-3 left-3">
-              <CharacterStatus :character="getCharacterData(char.character_id)" />
+    <div v-if="authStore.characters.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- Character Cards -->
+      <div 
+        v-for="char in authStore.characters" 
+        :key="char.character_id"
+        class="bg-neutral-900 rounded-xl border border-neutral-800 overflow-hidden hover:border-accent/50 transition-colors group"
+        :class="{ 'ring-2 ring-accent/50': char.character_id === authStore.currentCharacterId }"
+      >
+        <div class="relative">
+          <img 
+            :src="`https://images.evetech.net/characters/${char.character_id}/portrait?size=256&tenant=tranquility`"
+            :alt="char.name"
+            class="w-full h-48 object-cover"
+            @error="handleImageError"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
+          />
+          <div class="absolute top-3 left-3">
+            <CharacterStatus :character="getCharacterData(char.character_id)" />
+          </div>
+        </div>
+        <div class="p-6">
+          <h3 class="text-xl font-semibold text-neutral-100 mb-2">{{ char.name }}</h3>
+          <p class="text-sm text-neutral-400 mb-1">{{ char.corporation_name }}</p>
+          <p v-if="char.alliance_name" class="text-sm text-neutral-400 mb-4">{{ char.alliance_name }}</p>
+          
+          <div class="space-y-2 mb-4">
+            <div class="flex justify-between text-sm">
+              <span class="text-neutral-400">{{ $t('profile.balance') }}</span>
+              <span class="text-accent font-medium">{{ uiStore.formatISKShort(getCharacterData(char.character_id)?.wallet || 0) }}</span>
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-neutral-400">{{ $t('profile.location') }}</span>
+              <CharacterLocation 
+                :character="getCharacterData(char.character_id)" 
+                view-mode="compact" 
+                class="text-neutral-200 text-right"
+              />
+            </div>
+            <div class="flex justify-between text-sm">
+              <span class="text-neutral-400">{{ $t('profile.securityStatus') }}</span>
+              <span :class="getSecurityStatusColor(getCharacterData(char.character_id)?.security_status || 0)">
+                {{ (getCharacterData(char.character_id)?.security_status || 0).toFixed(2) }}
+              </span>
             </div>
           </div>
-          <div class="p-6">
-            <h3 class="text-xl font-semibold text-neutral-100 mb-2">{{ char.name }}</h3>
-            <p class="text-sm text-neutral-400 mb-1">{{ char.corporation_name }}</p>
-            <p v-if="char.alliance_name" class="text-sm text-neutral-400 mb-4">{{ char.alliance_name }}</p>
-            
-            <div class="space-y-2 mb-4">
-              <div class="flex justify-between text-sm">
-                <span class="text-neutral-400">{{ $t('profile.balance') }}</span>
-                <span class="text-accent font-medium">{{ uiStore.formatISKShort(getCharacterData(char.character_id)?.wallet || 0) }}</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-neutral-400">{{ $t('profile.location') }}</span>
-                <span class="text-neutral-200 text-right max-w-[150px] truncate">{{ getCharacterData(char.character_id)?.location?.solar_system_name || $t('common.unknown') }}</span>
-              </div>
-              <div class="flex justify-between text-sm">
-                <span class="text-neutral-400">{{ $t('profile.securityStatus') }}</span>
-                <span 
-                  class="font-medium"
-                  :class="getSecurityStatusColor(char.security_status)"
-                >
-                  {{ char.security_status?.toFixed(1) || '0.0' }}
-                </span>
-              </div>
-            </div>
-            
-            <!-- Update Timer for every character -->
-            <div class="mb-4">
-              <UpdateTimer 
-                :ref="el => timerRefs[char.character_id] = el"
-                :is-loading="allCharactersData.isRefreshing[char.character_id]"
-                @refresh="refreshCharacter(char.character_id)"
-                @timer-expired="allCharactersData.updateCharacterData(char.character_id)"
-              />
-              <div class="text-xs text-gray-500 mt-1 text-center">
-                Last: {{ allCharactersData.getTimeSinceUpdate(char.character_id) || 'Never' }}
-              </div>
-            </div>
-            
+          
+          <!-- Control Block -->
+          <div class="border-t border-neutral-700 pt-4">
             <div class="flex gap-2">
-              <button 
-                v-if="char.character_id !== authStore.currentCharacterId"
-                @click="switchToCharacter(char)"
-                class="flex-1 bg-accent text-white px-4 py-2 rounded-lg font-medium hover:bg-accent/90 transition-colors"
-              >
-                {{ $t('profiles.switchTo') }}
-              </button>
-              <button 
+              <div v-if="char.character_id === authStore.currentCharacterId" class="flex-1 bg-accent/10 border border-accent/30 rounded-lg px-3 py-2 text-center flex items-center justify-center">
+                <span class="text-sm text-accent font-medium">{{ $t('profiles.currentCharacter') }}</span>
+              </div>
+              <button
                 v-else
-                disabled
-                class="flex-1 bg-neutral-700 text-neutral-400 px-4 py-2 rounded-lg font-medium cursor-not-allowed"
+                @click="switchCharacter(char)"
+                class="flex-1 bg-accent text-accent-dark px-3 py-2 rounded-lg text-sm font-medium hover:bg-accent/90 transition-colors flex items-center justify-center gap-1"
               >
-                Active
+                <ArrowRightOnRectangleIcon class="h-4 w-4" />
+                {{ $t('profiles.select') }}
               </button>
-              <button 
+              <button
+                @click="refreshCharacter(char.character_id)"
+                class="px-3 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 transition-colors"
+              >
+                <ArrowPathIcon class="h-4 w-4" :class="{ 'animate-spin': isRefreshing[char.character_id] }" />
+              </button>
+              <button
                 @click="removeCharacter(char)"
-                class="px-4 py-2 rounded-lg border border-red-700/50 text-red-400 hover:bg-red-900/20 transition-colors"
+                class="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg text-sm font-medium hover:bg-red-500/30 transition-colors"
               >
-                <TrashIcon class="h-5 w-5" />
+                <TrashIcon class="h-4 w-4" />
               </button>
+            </div>
+            <!-- Update Info -->
+            <div class="mt-2 text-xs text-neutral-500 flex items-center justify-between">
+              <span>{{ $t('profiles.lastUpdate') }}: {{ formatLastUpdate(getCharacterData(char.character_id)?.lastUpdated) }}</span>
+              <UpdateTimer 
+                :key="`timer-${char.character_id}-${getCharacterData(char.character_id)?.lastUpdated || 0}`"
+                :ref="el => timerRefs[char.character_id] = el"
+                :initial-time="60" 
+                :compact="true" 
+                :label="$t('profiles.timeToUpdate')"
+                :show-icon="false"
+                @time-up="() => refreshCharacter(char.character_id)"
+              />
             </div>
           </div>
         </div>
-        
-        <!-- Add Character Card -->
-        <router-link 
-          to="/auth"
-          class="group flex items-center justify-center bg-neutral-900/50 border-2 border-dashed border-neutral-700 rounded-xl p-8 hover:border-accent/50 hover:bg-neutral-900/80 transition-all"
-        >
-          <div class="text-center">
-            <PlusIcon class="h-12 w-12 text-neutral-500 group-hover:text-accent mx-auto mb-3 transition-colors" />
-            <h3 class="text-lg font-semibold text-neutral-100 group-hover:text-accent transition-colors">
-              {{ $t('profile.addCharacter') }}
-            </h3>
-            <p class="text-sm text-neutral-400 mt-1">{{ $t('profiles.addAnotherCharacter') }}</p>
-          </div>
-        </router-link>
       </div>
       
-      <!-- Empty State for no characters -->
-      <div v-else class="text-center py-16">
-        <UserCircleIcon class="h-24 w-24 text-neutral-600 mx-auto mb-4" />
-        <h3 class="text-xl font-semibold text-neutral-100 mb-2">{{ $t('profiles.noCharacters') }}</h3>
-        <p class="text-neutral-400 mb-6">{{ $t('profiles.addFirstCharacter') }}</p>
-        <router-link 
-          to="/auth"
-          class="inline-flex items-center gap-2 bg-accent text-white px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition-colors"
-        >
-          <PlusIcon class="h-5 w-5" />
-          {{ $t('profile.addCharacter') }}
-        </router-link>
-      </div>
+      <!-- Add Character Card -->
+      <router-link 
+        to="/auth"
+        class="group flex items-center justify-center bg-neutral-900/50 border-2 border-dashed border-neutral-700 rounded-xl p-8 hover:border-accent/50 hover:bg-neutral-900/80 transition-all"
+      >
+        <div class="text-center">
+          <PlusIcon class="h-12 w-12 text-neutral-500 group-hover:text-accent mx-auto mb-3 transition-colors" />
+          <h3 class="text-lg font-semibold text-neutral-100 group-hover:text-accent transition-colors">
+            {{ $t('profile.addCharacter') }}
+          </h3>
+          <p class="text-sm text-neutral-400 mt-1">{{ $t('profiles.addAnotherCharacter') }}</p>
+        </div>
+      </router-link>
+    </div>
+    
+    <!-- Empty State for no characters -->
+    <div v-else class="text-center py-16">
+      <UserCircleIcon class="h-24 w-24 text-neutral-600 mx-auto mb-4" />
+      <h3 class="text-xl font-semibold text-neutral-100 mb-2">{{ $t('profiles.noCharacters') }}</h3>
+      <p class="text-neutral-400 mb-6">{{ $t('profiles.addFirstCharacter') }}</p>
+      <router-link 
+        to="/auth"
+        class="inline-flex items-center gap-2 bg-accent text-accent-dark px-6 py-3 rounded-lg font-medium hover:bg-accent/90 transition-colors"
+      >
+        <PlusIcon class="h-5 w-5" />
+        {{ $t('profile.addCharacter') }}
+      </router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from 'vue'
+import { computed, ref, onMounted, onUnmounted, inject } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { useUIStore } from '../stores/ui.js'
 import { useI18n } from 'vue-i18n'
-import { UserCircleIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import { UserCircleIcon, PlusIcon, TrashIcon, ArrowRightOnRectangleIcon, ArrowPathIcon } from '@heroicons/vue/24/outline'
 import CharacterStatus from '../components/CharacterStatus.vue'
+import CharacterLocation from '../components/CharacterLocation.vue'
 import UpdateTimer from '../components/UpdateTimer.vue'
 import { useAllCharactersData } from '../composables/useAllCharactersData.js'
 
@@ -139,11 +139,18 @@ const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { t } = useI18n()
+const setPageHeader = inject('setPageHeader')
 
 const allCharactersData = useAllCharactersData()
 const timerRefs = ref({})
+const isRefreshing = ref({})
 
 onMounted(() => {
+  setPageHeader({
+    title: t('profile.allCharacters'),
+    subtitle: t('profiles.manageCharacters'),
+    icon: UserCircleIcon
+  })
   // Start periodic updates for all characters
   allCharactersData.startPeriodicUpdates()
 })
@@ -158,11 +165,21 @@ const getCharacterData = (characterId) => {
 }
 
 const refreshCharacter = async (characterId) => {
-  await allCharactersData.updateCharacterData(characterId)
-  // Reset timer for this character
-  if (timerRefs.value[characterId]) {
-    timerRefs.value[characterId].resetTimer()
+  isRefreshing.value[characterId] = true
+  try {
+    await allCharactersData.updateCharacterData(characterId)
+    // Reset timer for this character
+    if (timerRefs.value[characterId]) {
+      timerRefs.value[characterId].resetTimer()
+    }
+  } finally {
+    isRefreshing.value[characterId] = false
   }
+}
+
+const switchCharacter = async (char) => {
+  await authStore.switchCharacter(char.character_id)
+  router.push({ name: 'Dashboard' })
 }
 
 const handleImageError = (event) => {
@@ -181,6 +198,18 @@ const getSecurityStatusColor = (status) => {
   if (status < 2) return 'text-neutral-300'
   if (status < 4.5) return 'text-green-500'
   return 'text-blue-500'
+}
+
+const formatLastUpdate = (timestamp) => {
+  if (!timestamp) return t('profiles.never')
+  const now = Date.now()
+  const diff = now - timestamp
+  const seconds = Math.floor(diff / 1000)
+  
+  if (seconds < 60) return t('profiles.justNow')
+  if (seconds < 3600) return t('profiles.minutesAgo', { minutes: Math.floor(seconds / 60) })
+  if (seconds < 86400) return t('profiles.hoursAgo', { hours: Math.floor(seconds / 3600) })
+  return t('profiles.daysAgo', { days: Math.floor(seconds / 86400) })
 }
 
 const switchToCharacter = (character) => {
