@@ -2,11 +2,14 @@ import { ref, computed } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
 import { esiCharacterWallet, esiCharacterLocation, esiCharacterOnline, esiUniverseNames, esiUniverseSystem, esiUniverseConstellation } from '../services/esi.js'
 
+// Shared state for singleton pattern
+const isRefreshing = ref({})
+const lastUpdate = ref({})
+const timers = ref({})
+const allCharactersData = ref({})
+let updateInterval = null
+
 export function useAllCharactersData() {
-  const isRefreshing = ref({})
-  const lastUpdate = ref({})
-  const timers = ref({})
-  const allCharactersData = ref({})
   
   // Get auth store lazily to avoid circular dependency
   const getAuthStore = () => {
@@ -102,7 +105,7 @@ export function useAllCharactersData() {
       }
       
       const tokens = JSON.parse(tokensData)
-      const token = tokens[characterId]
+      let token = tokens[characterId]
       
       if (!token) {
         console.error('No token found for character:', characterId)
@@ -271,13 +274,13 @@ export function useAllCharactersData() {
   // Start periodic updates for all characters
   const startPeriodicUpdates = () => {
     // Clear existing interval
-    if (window.allCharactersUpdateInterval) {
-      clearInterval(window.allCharactersUpdateInterval)
+    if (updateInterval) {
+      clearInterval(updateInterval)
     }
     
     const interval = getRefreshInterval()
     
-    window.allCharactersUpdateInterval = setInterval(async () => {
+    updateInterval = setInterval(async () => {
       // Check if we have characters
       const authStore = getAuthStore()
       if (authStore.characters && authStore.characters.length > 0) {
@@ -289,9 +292,9 @@ export function useAllCharactersData() {
   
   // Stop periodic updates
   const stopPeriodicUpdates = () => {
-    if (window.allCharactersUpdateInterval) {
-      clearInterval(window.allCharactersUpdateInterval)
-      window.allCharactersUpdateInterval = null
+    if (updateInterval) {
+      clearInterval(updateInterval)
+      updateInterval = null
     }
     Object.values(timers.value).forEach(timer => {
       clearInterval(timer)

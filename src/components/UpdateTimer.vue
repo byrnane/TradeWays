@@ -70,7 +70,10 @@ const startTimer = () => {
     if (timeLeft.value <= 0) {
       clearInterval(intervalId)
       emit('timer-expired')
-      // Don't auto-restart to prevent memory leaks
+      // Auto-restart timer after emitting
+      setTimeout(() => {
+        startTimer()
+      }, 100)
     }
   }, 1000)
 }
