@@ -45,9 +45,7 @@
           >
             <span class="text-lg">{{ currentLocale === 'ru' ? '🇷🇺' : '🇺🇸' }}</span>
             <span class="text-sm font-medium">{{ currentLocale === 'ru' ? 'Русский' : 'English' }}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4" :class="{ 'rotate-180': languageDropdownOpen }">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-            </svg>
+            <ChevronDownIcon class="h-4 w-4" :class="{ 'rotate-180': languageDropdownOpen }" />
           </button>
           
           <!-- Dropdown -->
@@ -78,9 +76,7 @@
           >
             <span class="text-lg">{{ themeIcon }}</span>
             <span class="text-sm font-medium">{{ themeText }}</span>
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-4 w-4" :class="{ 'rotate-180': themeDropdownOpen }">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-            </svg>
+            <ChevronDownIcon class="h-4 w-4" :class="{ 'rotate-180': themeDropdownOpen }" />
           </button>
           
           <!-- Dropdown -->
@@ -118,9 +114,7 @@
           to="/profiles" 
           class="flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M17.982 18.725A7.488 7.488 0 0 0 12 15.75a7.488 7.488 0 0 0-5.982 2.975m11.963 0a9 9 0 1 0-11.963 0m11.963 0A8.966 8.966 0 0 1 12 21a8.966 8.966 0 0 1-5.982-2.275M15 9.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          </svg>
+          <UserIcon class="h-5 w-5" />
           <span class="text-sm font-medium">{{ $t('common.profile') }}</span>
         </router-link>
 
@@ -129,10 +123,7 @@
           to="/settings" 
           class="flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-5 w-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M10.343 3.94c.09-.542.56-.94 1.11-.94h1.094c.55 0 1.02.398 1.11.94l.149.894c.07.424.364.764.765.936.4.172.86.143 1.231-.078l.765-.446c.459-.268 1.045-.213 1.447.136l.774.635c.402.349.47.917.16 1.341l-.527.698c-.247.327-.292.766-.117 1.134.175.368.537.618.947.664l.836.099c.543.064.94.56.94 1.109v1.094c0 .55-.397 1.045-.94 1.109l-.836.099c-.41.046-.772.296-.947.664-.175.368-.13.807.117 1.134l.527.698c.31.424.242.992-.16 1.341l-.774.635c-.402.349-.988.404-1.447.136l-.765-.446c-.371-.221-.831-.25-1.231-.078-.401.172-.695.512-.765.936l-.149.894c-.09.542-.56.94-1.11.94h-1.094c-.55 0-1.02-.398-1.11-.94l-.149-.894c-.07-.424-.364-.764-.765-.936-.4-.172-.86-.143-1.231.078l-.765.446c-.459.268-1.045.213-1.447-.136l-.774-.635c-.402-.349-.47-.917-.16-1.341l.527-.698c.247-.327.292-.766.117-1.134-.175-.368-.537-.618-.947-.664l-.836-.099c-.543-.064-.94-.56-.94-1.109v-1.094c0-.55.397-1.045.94-1.109l.836-.099c.41-.046.772-.296.947-.664.175-.368.13-.807-.117-1.134l-.527-.698c-.31-.424-.242-.992.16-1.341l.774-.635c.402-.349.988-.404 1.447-.136l.765.446c.371.221.831.25 1.231.078.401-.172.695-.512.765-.936l.149-.894Z" />
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-          </svg>
+          <Cog6ToothIcon class="h-5 w-5" />
           <span class="text-sm font-medium">{{ $t('common.settings') }}</span>
         </router-link>
       </div>
@@ -146,6 +137,14 @@ import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '../stores/auth.js'
 import { useSettingsStore } from '../stores/settings.js'
+import { 
+  ChevronDownIcon,
+  UserIcon,
+  Cog6ToothIcon,
+  SunIcon,
+  MoonIcon,
+  ComputerDesktopIcon
+} from '@heroicons/vue/24/outline'
 
 const emit = defineEmits(['toggle-sidebar'])
 
