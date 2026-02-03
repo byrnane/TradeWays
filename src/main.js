@@ -25,11 +25,6 @@ app.use(i18n)
 app.config.globalProperties.$pinia = pinia
 
 // Use API plugin
-const http = axios.create({
-  baseURL: 'https://esi.evetech.net/latest',
-  timeout: 30000
-})
-
 app.use(apiPlugin, {
   baseURL: 'https://esi.evetech.net/latest',
   timeout: 30000

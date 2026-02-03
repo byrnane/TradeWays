@@ -12,8 +12,8 @@ export const createInterceptors = (axios) => {
         // Get current character ID from localStorage
         const currentCharacterId = localStorage.getItem('esi_current_character_id')
         
-        if (currentCharacterId && allTokens[currentCharacterId]) {
-          const tokens = allTokens[currentCharacterId]
+        if (currentCharacterId && allTokens[parseInt(currentCharacterId)]) {
+          const tokens = allTokens[parseInt(currentCharacterId)]
           if (tokens.access_token) {
             config.headers.Authorization = `Bearer ${tokens.access_token}`
           }
@@ -23,7 +23,7 @@ export const createInterceptors = (axios) => {
       }
     }
     // Add user agent for ESI
-    config.headers['User-Agent'] = `EVE Horizon - TradeWays (contact@example.com)`
+    config.headers['User-Agent'] = `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
     
     return config
   }
@@ -46,7 +46,7 @@ export const createInterceptors = (axios) => {
       if (currentCharacterId && tokensData && !error.config._retry) {
         try {
           const allTokens = JSON.parse(tokensData)
-          const charTokens = allTokens[currentCharacterId]
+          const charTokens = allTokens[parseInt(currentCharacterId)]
           
           if (charTokens && charTokens.refresh_token) {
             error.config._retry = true
@@ -55,7 +55,7 @@ export const createInterceptors = (axios) => {
             const newTokens = await refreshAccessToken(charTokens.refresh_token)
             
             // Update tokens for current character
-            allTokens[currentCharacterId] = {
+            allTokens[parseInt(currentCharacterId)] = {
               access_token: newTokens.access_token,
               refresh_token: newTokens.refresh_token,
               expires_at: Date.now() + (newTokens.expires_in * 1000)
@@ -87,7 +87,13 @@ export const createInterceptors = (axios) => {
     if (error.response?.status === 420) {
       const retryAfter = error.response.headers['x-esi-error-limit-reset'] || 60
       console.warn(`ESI rate limit hit, retrying after ${retryAfter} seconds`)
-      // TODO: Implement queue for retrying requests
+      
+      // Return a promise that retries after the delay
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          resolve(axios.request(error.config))
+        }, retryAfter * 1000)
+      })
     }
 
     // Handle ESI errors

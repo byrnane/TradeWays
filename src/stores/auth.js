@@ -6,16 +6,27 @@ import { saveToStorage, removeFromStorage, STORAGE_KEYS, needsRefresh } from '..
 export const useAuthStore = defineStore('auth', () => {
   // State
   const characters = ref([])
-  const currentCharacterId = ref(null)
+  const currentCharacterId = ref(null) // Always store as number
   const characterData = ref({})
   const isLoading = ref(false)
   const isRefreshing = ref(false)
   const dataUpdateInterval = ref(null)
   const isInitializing = ref(true) // Add initialization state
   
+  // Validate token object
+  const validateToken = (token) => {
+    return token && 
+           typeof token.access_token === 'string' && 
+           token.access_token.length > 0 &&
+           typeof token.refresh_token === 'string' && 
+           token.refresh_token.length > 0 &&
+           typeof token.expires_at === 'number' &&
+           token.expires_at > Date.now()
+  }
+
   // Helper functions
   const saveCurrentCharacterId = () => {
-    if (currentCharacterId.value && currentCharacterId.value !== 'null') {
+    if (currentCharacterId.value && currentCharacterId.value !== null) {
       localStorage.setItem('esi_current_character_id', currentCharacterId.value.toString())
     } else {
       localStorage.removeItem('esi_current_character_id')
@@ -39,10 +50,10 @@ export const useAuthStore = defineStore('auth', () => {
       // Load current character ID
       const savedCurrentId = localStorage.getItem('esi_current_character_id')
       if (savedCurrentId && savedCurrentId !== 'undefined' && savedCurrentId !== 'null') {
-        currentCharacterId.value = savedCurrentId
+        currentCharacterId.value = parseInt(savedCurrentId)
       } else if (characters.value.length > 0) {
         // If no current character ID but we have characters, select the first one
-        currentCharacterId.value = characters.value[0].character_id.toString()
+        currentCharacterId.value = characters.value[0].character_id
         saveCurrentCharacterId()
         console.log('Auth store: Auto-selected first character:', currentCharacterId.value)
       }
@@ -62,7 +73,7 @@ export const useAuthStore = defineStore('auth', () => {
   
   // Get current character
   const character = computed(() => {
-    return characters.value.find(char => char.character_id === parseInt(currentCharacterId.value)) || null
+    return characters.value.find(char => char.character_id === currentCharacterId.value) || null
   })
   
   // Get current character's tokens
@@ -114,7 +125,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     
     // Set as current character
-    currentCharacterId.value = newCharacter.character_id.toString()
+    currentCharacterId.value = newCharacter.character_id
     
     // Save to localStorage
     saveCharacters()
@@ -122,25 +133,32 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const switchCharacter = (characterId) => {
-    const char = characters.value.find(c => c.character_id === parseInt(characterId))
+    const char = characters.value.find(c => c.character_id === characterId)
     if (char) {
-      currentCharacterId.value = char.character_id.toString()
+      currentCharacterId.value = char.character_id
       saveCurrentCharacterId()
       // Clear character data when switching
       characterData.value = {}
       localStorage.removeItem('esi_character_data')
+      // Clear last update timestamp to force refresh
+      localStorage.removeItem('esi_last_update')
+      // Stop periodic updates and restart them
+      stopPeriodicUpdates()
+      if (isAuthenticated.value) {
+        startPeriodicUpdates()
+      }
     }
   }
 
   const removeCharacter = (characterId) => {
-    const index = characters.value.findIndex(c => c.character_id === parseInt(characterId))
+    const index = characters.value.findIndex(c => c.character_id === characterId)
     if (index >= 0) {
       characters.value.splice(index, 1)
       
       // If removing current character, switch to another or logout
-      if (currentCharacterId.value === characterId.toString()) {
+      if (currentCharacterId.value === characterId) {
         if (characters.value.length > 0) {
-          currentCharacterId.value = characters.value[0].character_id.toString()
+          currentCharacterId.value = characters.value[0].character_id
           saveCurrentCharacterId()
         } else {
           logout()
@@ -331,6 +349,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const logout = () => {
+    // Stop periodic updates first
+    stopPeriodicUpdates()
+    
     // Clear current character's tokens
     clearTokens()
     
@@ -372,7 +393,7 @@ export const useAuthStore = defineStore('auth', () => {
     
     // Restore tokens from sessionStorage
     if (characters.value.length > 0 && currentCharacterId.value) {
-      const targetId = parseInt(currentCharacterId.value)
+      const targetId = currentCharacterId.value
       const currentChar = characters.value.find(char => char.character_id === targetId)
       
       if (currentChar) {
@@ -384,11 +405,25 @@ export const useAuthStore = defineStore('auth', () => {
             const charTokens = allTokens[currentChar.character_id]
             
             if (charTokens) {
-              const charIndex = characters.value.findIndex(c => c.character_id === currentChar.character_id)
-              if (charIndex >= 0) {
-                characters.value[charIndex].access_token = charTokens.access_token
-                characters.value[charIndex].refresh_token = charTokens.refresh_token
-                characters.value[charIndex].expires_at = charTokens.expires_at
+              // Validate tokens before restoring
+              if (validateToken(charTokens)) {
+                // Create new array to maintain reactivity
+                characters.value = characters.value.map(char => {
+                  if (char.character_id === currentChar.character_id) {
+                    return {
+                      ...char,
+                      access_token: charTokens.access_token,
+                      refresh_token: charTokens.refresh_token,
+                      expires_at: charTokens.expires_at
+                    }
+                  }
+                  return char
+                })
+              } else {
+                console.warn('Invalid or expired tokens in session storage for character:', currentChar.character_id)
+                // Remove invalid tokens from session storage
+                delete allTokens[currentChar.character_id]
+                sessionStorage.setItem('esi_session_tokens', JSON.stringify(allTokens))
               }
             }
           } catch (error) {
@@ -403,7 +438,7 @@ export const useAuthStore = defineStore('auth', () => {
   const initializeAsync = async () => {
     if (characters.value.length > 0 && currentCharacterId.value) {
       const currentChar = characters.value.find(char => 
-        char.character_id === parseInt(currentCharacterId.value)
+        char.character_id === currentCharacterId.value
       )
       
       if (currentChar && currentChar.access_token) {
@@ -432,7 +467,7 @@ export const useAuthStore = defineStore('auth', () => {
           // Don't fail completely if ESI is down
         }
         
-        // Start periodic updates
+        // Start periodic updates after successful initialization
         startPeriodicUpdates()
       } else {
         // No valid tokens, clear current character
@@ -485,10 +520,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Initialize store (synchronous)
   initializeSync()
   
-  // Start auto-refresh when store is created
-  if (isAuthenticated.value) {
-    startPeriodicUpdates()
-  }
+  // Don't start periodic updates here - wait for async initialization
   
   // Initialize async part in background
   initializeAsync()
