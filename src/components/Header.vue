@@ -132,9 +132,11 @@
             <div class="hidden sm:block text-left">
               <div class="font-medium text-neutral-100">{{ authStore.character.name }}</div>
               <div class="text-sm text-neutral-400">{{ authStore.character.corporation_name }}</div>
-              <div class="flex items-center gap-1 mt-1">
-                <div class="h-2 w-2 rounded-full" :class="authStore.isRefreshing ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'"></div>
-                <span class="text-xs text-neutral-500">{{ authStore.isRefreshing ? $t('status.refreshing') : $t('status.active') }}</span>
+              <div class="flex items-center gap-2 mt-1">
+                <CharacterStatus :character="authStore.characterData" />
+                <div class="text-xs text-neutral-500">
+                  <UpdateTimer :initial-time="60" :is-loading="authStore.isRefreshing" :compact="true" />
+                </div>
               </div>
             </div>
             <ChevronDownIcon class="h-4 w-4 text-neutral-400" :class="{ 'rotate-180': profileDropdownOpen }" />
@@ -159,9 +161,11 @@
                 <div class="flex-1 text-left">
                   <div class="font-medium text-neutral-100">{{ authStore.character.name }}</div>
                   <div class="text-sm text-neutral-400">{{ authStore.character.corporation_name }}</div>
-                  <!-- Auth Status moved here -->
-                  <div class="mt-1">
-                    <AuthStatus />
+                  <div class="flex items-center gap-2 mt-1">
+                    <CharacterStatus :character="authStore.characterData" />
+                    <div class="text-xs text-neutral-500">
+                      <CharacterLocation :character="authStore.characterData" :show-full="false" :show-details="false" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -171,9 +175,9 @@
             <div v-if="authStore.characters.length > 1" class="py-2 max-h-60 overflow-y-auto">
               <div v-for="char in authStore.characters" :key="char.character_id">
                 <button
-                  v-if="char.character_id !== authStore.character.character_id"
                   @click.stop="switchCharacter(char)"
                   class="w-full px-4 py-2 text-left text-sm hover:bg-neutral-700 flex items-center gap-3"
+                  :class="{ 'bg-neutral-700/30': char.character_id === authStore.character.character_id }"
                 >
                   <img 
                     :src="`https://images.evetech.net/characters/${char.character_id}/portrait?size=32&tenant=tranquility`"
@@ -186,10 +190,16 @@
                   <div class="flex-1">
                     <div class="font-medium text-neutral-100">{{ char.name }}</div>
                     <div class="text-xs text-neutral-400">{{ char.corporation_name }}</div>
+                    <div class="mt-1">
+                      <CharacterStatus :character="getCharacterData(char.character_id)" />
+                    </div>
                   </div>
                 </button>
               </div>
             </div>
+            
+            <!-- Divider -->
+            <div class="border-t border-neutral-700"></div>
             
             <!-- All Characters Button -->
             <div class="py-2">
@@ -203,7 +213,7 @@
             </div>
             
             <!-- Add Profile Section -->
-            <div class="border-t border-neutral-700 py-2">
+            <div class="py-2">
               <button
                 @click.stop="addNewProfile"
                 class="w-full px-4 py-2 text-left text-sm text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 transition-colors flex items-center gap-2"
@@ -213,8 +223,11 @@
               </button>
             </div>
             
+            <!-- Divider -->
+            <div class="border-t border-neutral-700"></div>
+            
             <!-- Logout -->
-            <div class="border-t border-neutral-700 py-2">
+            <div class="py-2">
               <button
                 @click.stop="logout"
                 class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors flex items-center gap-2"
@@ -246,7 +259,10 @@ import {
   PlusIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/vue/24/outline'
-import AuthStatus from './AuthStatus.vue'
+import CharacterStatus from './CharacterStatus.vue'
+import CharacterLocation from './CharacterLocation.vue'
+import UpdateTimer from './UpdateTimer.vue'
+import { useAllCharactersData } from '../composables/useAllCharactersData.js'
 
 const emit = defineEmits(['toggle-sidebar'])
 
@@ -255,6 +271,7 @@ const router = useRouter()
 const { locale, t } = useI18n()
 const authStore = useAuthStore()
 const settingsStore = useSettingsStore()
+const allCharactersData = useAllCharactersData()
 
 const languageDropdownOpen = ref(false)
 const themeDropdownOpen = ref(false)
@@ -262,6 +279,10 @@ const profileDropdownOpen = ref(false)
 
 const currentLocale = computed(() => locale.value)
 const currentTheme = computed(() => settingsStore.theme)
+
+const getCharacterData = (characterId) => {
+  return allCharactersData.getCharacterData(characterId)
+}
 
 const themeIcon = computed(() => {
   if (currentTheme.value === 'light') return '☀️'

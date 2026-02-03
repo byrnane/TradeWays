@@ -13,7 +13,9 @@ export default {
     success: 'Успешно',
     unknown: 'Неизвестно',
     minutes: 'минут',
-    hour: 'час'
+    hour: 'час',
+    refresh: 'Обновить',
+    updating: 'Обновление...'
   },
   status: {
     active: 'Активна',

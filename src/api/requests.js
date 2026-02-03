@@ -7,6 +7,9 @@ export const createRequests = (http, store) => {
     characters: characters(http)
   }
 
+  // Add universe endpoints from characters module
+  requests.universe = requests.characters.universe
+
   // Add utility methods
   requests.getCancelToken = () => axios.CancelToken.source()
   requests.isCancel = axios.isCancel

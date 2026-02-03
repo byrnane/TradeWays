@@ -23,7 +23,10 @@
             referrerpolicy="no-referrer"
           />
           <div class="flex-1">
-            <h2 class="text-3xl font-bold text-neutral-100 mb-2">{{ authStore.character.name }}</h2>
+            <div class="flex items-center gap-3 mb-2">
+              <h2 class="text-3xl font-bold text-neutral-100">{{ authStore.character.name }}</h2>
+              <CharacterStatus :character="authStore.characterData" />
+            </div>
             <p class="text-lg text-neutral-400 mb-4">{{ authStore.character.corporation_name }}</p>
             <p v-if="authStore.character.alliance_name" class="text-neutral-400 mb-4">{{ authStore.character.alliance_name }}</p>
             
@@ -34,7 +37,7 @@
               </div>
               <div class="bg-neutral-800 rounded-lg p-4">
                 <div class="text-sm text-neutral-400 mb-1">{{ $t('profile.location') }}</div>
-                <div class="text-xl font-bold text-neutral-200">{{ authStore.characterData?.location?.solar_system_name || 'Unknown' }}</div>
+                <CharacterLocation :character="authStore.characterData" :show-details="true" />
               </div>
               <div class="bg-neutral-800 rounded-lg p-4">
                 <div class="text-sm text-neutral-400 mb-1">{{ $t('profile.activeOrders') }}</div>
@@ -124,6 +127,8 @@ import {
   UserCircleIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/vue/24/outline'
+import CharacterStatus from '../components/CharacterStatus.vue'
+import CharacterLocation from '../components/CharacterLocation.vue'
 
 const authStore = useAuthStore()
 const uiStore = useUIStore()

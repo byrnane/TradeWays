@@ -25,11 +25,8 @@
               crossorigin="anonymous"
               referrerpolicy="no-referrer"
             />
-            <div v-if="char.character_id === authStore.currentCharacterId" class="absolute top-3 right-3">
-              <div class="bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                <div class="h-2 w-2 rounded-full bg-green-500"></div>
-                {{ $t('profile.active') }}
-              </div>
+            <div class="absolute top-3 left-3">
+              <CharacterStatus :character="getCharacterData(char.character_id)" />
             </div>
           </div>
           <div class="p-6">
@@ -40,11 +37,11 @@
             <div class="space-y-2 mb-4">
               <div class="flex justify-between text-sm">
                 <span class="text-neutral-400">{{ $t('profile.balance') }}</span>
-                <span class="text-accent font-medium">{{ uiStore.formatISKShort(0) }}</span>
+                <span class="text-accent font-medium">{{ uiStore.formatISKShort(getCharacterData(char.character_id)?.wallet || 0) }}</span>
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-neutral-400">{{ $t('profile.location') }}</span>
-                <span class="text-neutral-200">{{ $t('common.unknown') }}</span>
+                <span class="text-neutral-200 text-right max-w-[150px] truncate">{{ getCharacterData(char.character_id)?.location?.solar_system_name || $t('common.unknown') }}</span>
               </div>
               <div class="flex justify-between text-sm">
                 <span class="text-neutral-400">{{ $t('profile.securityStatus') }}</span>
@@ -54,6 +51,19 @@
                 >
                   {{ char.security_status?.toFixed(1) || '0.0' }}
                 </span>
+              </div>
+            </div>
+            
+            <!-- Update Timer for every character -->
+            <div class="mb-4">
+              <UpdateTimer 
+                :ref="el => timerRefs[char.character_id] = el"
+                :is-loading="allCharactersData.isRefreshing[char.character_id]"
+                @refresh="refreshCharacter(char.character_id)"
+                @timer-expired="allCharactersData.updateCharacterData(char.character_id)"
+              />
+              <div class="text-xs text-gray-500 mt-1 text-center">
+                Last: {{ allCharactersData.getTimeSinceUpdate(char.character_id) || 'Never' }}
               </div>
             </div>
             
@@ -70,7 +80,7 @@
                 disabled
                 class="flex-1 bg-neutral-700 text-neutral-400 px-4 py-2 rounded-lg font-medium cursor-not-allowed"
               >
-                {{ $t('profiles.currentlyActive') }}
+                Active
               </button>
               <button 
                 @click="removeCharacter(char)"
@@ -81,6 +91,20 @@
             </div>
           </div>
         </div>
+        
+        <!-- Add Character Card -->
+        <router-link 
+          to="/auth"
+          class="group flex items-center justify-center bg-neutral-900/50 border-2 border-dashed border-neutral-700 rounded-xl p-8 hover:border-accent/50 hover:bg-neutral-900/80 transition-all"
+        >
+          <div class="text-center">
+            <PlusIcon class="h-12 w-12 text-neutral-500 group-hover:text-accent mx-auto mb-3 transition-colors" />
+            <h3 class="text-lg font-semibold text-neutral-100 group-hover:text-accent transition-colors">
+              {{ $t('profile.addCharacter') }}
+            </h3>
+            <p class="text-sm text-neutral-400 mt-1">{{ $t('profiles.addAnotherCharacter') }}</p>
+          </div>
+        </router-link>
       </div>
       
       <!-- Empty State for no characters -->
@@ -96,37 +120,50 @@
           {{ $t('profile.addCharacter') }}
         </router-link>
       </div>
-      
-      <!-- Add Character Card -->
-      <router-link 
-        v-if="authStore.isAuthenticated"
-        to="/auth"
-        class="group block bg-neutral-900/50 border-2 border-dashed border-neutral-700 rounded-xl p-8 hover:border-accent/50 hover:bg-neutral-900/80 transition-all"
-      >
-        <div class="text-center">
-          <PlusIcon class="h-12 w-12 text-neutral-500 group-hover:text-accent mx-auto mb-3 transition-colors" />
-          <h3 class="text-lg font-semibold text-neutral-100 group-hover:text-accent transition-colors">
-            {{ $t('profile.addCharacter') }}
-          </h3>
-          <p class="text-sm text-neutral-400 mt-1">{{ $t('profiles.addAnotherCharacter') }}</p>
-        </div>
-      </router-link>
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { useUIStore } from '../stores/ui.js'
 import { useI18n } from 'vue-i18n'
 import { UserCircleIcon, PlusIcon, TrashIcon } from '@heroicons/vue/24/outline'
+import CharacterStatus from '../components/CharacterStatus.vue'
+import UpdateTimer from '../components/UpdateTimer.vue'
+import { useAllCharactersData } from '../composables/useAllCharactersData.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { t } = useI18n()
+
+const allCharactersData = useAllCharactersData()
+const timerRefs = ref({})
+
+onMounted(() => {
+  // Start periodic updates for all characters
+  allCharactersData.startPeriodicUpdates()
+})
+
+onUnmounted(() => {
+  // Stop periodic updates
+  allCharactersData.stopPeriodicUpdates()
+})
+
+const getCharacterData = (characterId) => {
+  return allCharactersData.getCharacterData(characterId)
+}
+
+const refreshCharacter = async (characterId) => {
+  await allCharactersData.updateCharacterData(characterId)
+  // Reset timer for this character
+  if (timerRefs.value[characterId]) {
+    timerRefs.value[characterId].resetTimer()
+  }
+}
 
 const handleImageError = (event) => {
   event.target.src = `data:image/svg+xml;base64,${btoa(`

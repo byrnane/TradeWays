@@ -8,5 +8,13 @@ export default (http) => ({
   // Wallet
   wallet: {
     balance: (characterId, config = {}) => http.get(`/characters/${characterId}/wallet/`, config)
+  },
+  
+  // Universe information
+  universe: {
+    solarSystem: (systemId, config = {}) => http.get(`/universe/systems/${systemId}/`, config),
+    constellation: (constellationId, config = {}) => http.get(`/universe/constellations/${constellationId}/`, config),
+    region: (regionId, config = {}) => http.get(`/universe/regions/${regionId}/`, config),
+    station: (stationId, config = {}) => http.get(`/universe/stations/${stationId}/`, config)
   }
 })

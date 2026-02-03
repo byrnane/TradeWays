@@ -13,7 +13,9 @@ export default {
     success: 'Success',
     unknown: 'Unknown',
     minutes: 'minutes',
-    hour: 'hour'
+    hour: 'hour',
+    refresh: 'Refresh',
+    updating: 'Updating...'
   },
   status: {
     active: 'Active',

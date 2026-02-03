@@ -57,3 +57,64 @@ export const refreshAccessToken = async (refreshToken) => {
   )
   return response.data
 }
+
+// ESI API functions for character data
+export const esiCharacterWallet = async (characterId, accessToken) => {
+  const response = await axios.get(`https://esi.evetech.net/latest/characters/${characterId}/wallet/`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'User-Agent': `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
+    }
+  })
+  return response.data
+}
+
+export const esiCharacterLocation = async (characterId, accessToken) => {
+  const response = await axios.get(`https://esi.evetech.net/latest/characters/${characterId}/location/`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'User-Agent': `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
+    }
+  })
+  return response.data
+}
+
+export const esiCharacterOnline = async (characterId, accessToken) => {
+  const response = await axios.get(`https://esi.evetech.net/latest/characters/${characterId}/online/`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'User-Agent': `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
+    }
+  })
+  return response.data
+}
+
+export const esiUniverseNames = async (ids, accessToken) => {
+  const response = await axios.post(`https://esi.evetech.net/latest/universe/names/`, ids, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'User-Agent': `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
+    }
+  })
+  return response.data
+}
+
+export const esiUniverseSystem = async (systemId, accessToken) => {
+  const response = await axios.get(`https://esi.evetech.net/latest/universe/systems/${systemId}/`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'User-Agent': `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
+    }
+  })
+  return response.data
+}
+
+export const esiUniverseConstellation = async (constellationId, accessToken) => {
+  const response = await axios.get(`https://esi.evetech.net/latest/universe/constellations/${constellationId}/`, {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'User-Agent': `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
+    }
+  })
+  return response.data
+}
