@@ -54,6 +54,10 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useCharacterLocation } from '../composables/useCharacterLocation.js'
+import { 
+  SECURITY_COLORS
+} from '../constants/security.js'
+import { normalizeCharacterData, getSystemName, getSpecialSpaceType } from '../utils/characterNormalizer.js'
 
 const { t } = useI18n()
 
@@ -79,26 +83,18 @@ const props = defineProps({
 
 const { location, shortLocation, locationParts } = useCharacterLocation(props.character)
 
+// Normalized character data
+const normalizedCharacter = computed(() => normalizeCharacterData(props.character))
+
 // Main system name
 const mainSystemName = computed(() => {
   if (!props.character) return t('common.unknown')
-  return props.character.location?.solar_system_name || 
-         props.character.locationName || 
-         props.character.system_name ||
-         t('common.unknown')
+  return getSystemName(props.character) || t('common.unknown')
 })
 
 // Security status (system security, not character)
 const securityStatus = computed(() => {
-  // Try to get system security from various sources
-  if (props.character?.location?.system_security_status !== undefined) {
-    return props.character.location.system_security_status
-  }
-  if (props.character?.system_security_status !== undefined) {
-    return props.character.system_security_status
-  }
-  // For now, we don't have system security data, so don't show it
-  return null
+  return normalizedCharacter.value?.systemSecurityStatus
 })
 
 // Security status color class (for system security with detailed gradient)
@@ -106,66 +102,43 @@ const securityStatusClass = computed(() => {
   if (securityStatus.value === null) return ''
   
   const status = parseFloat(securityStatus.value)
+  const specialType = getSpecialSpaceType(props.character)
   
-  // Special space types
-  if (props.character?.location?.solar_system_name?.toLowerCase().includes('wormhole') || 
-      props.character?.system_name?.toLowerCase().includes('wormhole') ||
-      props.character?.location?.solar_system_id >= 31000000 && props.character?.location?.solar_system_id < 32000000) {
-    return 'bg-[#7A3DF0]/20 text-[#7A3DF0]'  // Фиолетовый - Wormhole Space
+  // Check for special space types first
+  if (specialType === 'wormhole') return SECURITY_COLORS.WORMHOLE
+  if (specialType === 'abyssal') return SECURITY_COLORS.ABYSSAL
+  if (specialType === 'pochven') return SECURITY_COLORS.POCHVEN
+  
+  // Use exact security status colors if available
+  const exactStatus = status.toFixed(1)
+  if (SECURITY_COLORS[exactStatus]) {
+    return SECURITY_COLORS[exactStatus]
   }
   
-  if (props.character?.location?.solar_system_name?.toLowerCase().includes('abyssal') || 
-      props.character?.system_name?.toLowerCase().includes('abyssal')) {
-    return 'bg-[#00C8FF]/20 text-[#00C8FF]'  // Неоново-синий - Abyssal Deadspace
-  }
-  
-  if (props.character?.location?.solar_system_name?.toLowerCase().includes('pochven') || 
-      props.character?.system_name?.toLowerCase().includes('pochven') ||
-      (props.character?.location?.solar_system_id >= 20000000 && props.character?.location?.solar_system_id < 21000000)) {
-    return 'bg-[#7F1D1D]/20 text-[#7F1D1D]'  // Гнилой красно-фиолетовый - Pochven
-  }
-  
-  // High-sec colors
-  if (status === 1.0) return 'bg-[#00FF66]/20 text-[#00FF66]'  // Ярко-зелёный
-  if (status === 0.9) return 'bg-[#1AFF4D]/20 text-[#1AFF4D]'  // Зелёный
-  if (status === 0.8) return 'bg-[#66FF33]/20 text-[#66FF33]'  // Жёлто-зелёный
-  if (status === 0.7) return 'bg-[#99FF00]/20 text-[#99FF00]'  // Салатовый
-  if (status === 0.6) return 'bg-[#CCFF00]/20 text-[#CCFF00]'  // Жёлтый
-  
-  // Low-sec colors
-  if (status === 0.5) return 'bg-[#FFCC00]/20 text-[#FFCC00]'  // Жёлто-оранжевый
-  if (status === 0.4) return 'bg-[#FF9900]/20 text-[#FF9900]'  // Оранжевый
-  if (status === 0.3) return 'bg-[#FF6600]/20 text-[#FF6600]'  // Тёмно-оранжевый
-  if (status === 0.2) return 'bg-[#FF3300]/20 text-[#FF3300]'  // Оранжево-красный
-  if (status === 0.1) return 'bg-[#FF0000]/20 text-[#FF0000]'  // Красный
-  
-  // Null-sec
-  if (status === 0.0) return 'bg-[#990000]/20 text-[#990000]'  // Тёмно-красный / бордовый
-  
-  // Fallback for any other values
-  if (status > 0.6) return 'bg-green-500/20 text-green-400'
-  if (status > 0) return 'bg-yellow-500/20 text-yellow-400'
-  return 'bg-red-500/20 text-red-400'
+  // Fallback colors based on range
+  if (status > 0.6) return SECURITY_COLORS.HIGH_SEC_FALLBACK
+  if (status > 0) return SECURITY_COLORS.LOW_SEC_FALLBACK
+  return SECURITY_COLORS.NULL_SEC_FALLBACK
 })
 
 // Breadcrumb parts (region > constellation)
 const breadcrumbParts = computed(() => {
   const parts = []
-  if (props.character?.regionName) {
-    parts.push(props.character.regionName)
+  if (normalizedCharacter.value?.regionName) {
+    parts.push(normalizedCharacter.value.regionName)
   }
-  if (props.character?.constellationName) {
-    parts.push(props.character.constellationName)
+  if (normalizedCharacter.value?.constellationName) {
+    parts.push(normalizedCharacter.value.constellationName)
   }
   return parts
 })
 
 // Current position (station or "In Space")
 const currentPosition = computed(() => {
-  if (!props.character?.location) return t('common.unknown')
+  if (!normalizedCharacter.value?.location) return t('common.unknown')
   
-  if (props.character.location.station_name) {
-    return props.character.location.station_name
+  if (normalizedCharacter.value.stationName) {
+    return normalizedCharacter.value.stationName
   }
   
   return t('location.inSpace')

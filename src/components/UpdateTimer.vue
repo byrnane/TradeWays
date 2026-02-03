@@ -73,10 +73,11 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['refresh', 'timer-expired', 'time-up'])
+const emit = defineEmits(['refresh', 'timer-expired'])
 
 const timeLeft = ref(props.initialTime)
 let intervalId = null
+let isMounted = true
 
 const formattedTime = computed(() => {
   const minutes = Math.floor(timeLeft.value / 60)
@@ -85,17 +86,19 @@ const formattedTime = computed(() => {
 })
 
 const startTimer = () => {
+  if (!isMounted) return
   timeLeft.value = props.initialTime
   intervalId = setInterval(() => {
+    if (!isMounted) return
+    
     timeLeft.value--
     
     if (timeLeft.value <= 0) {
       clearInterval(intervalId)
       emit('timer-expired')
-      emit('time-up')
       // Auto-restart timer after emitting
       setTimeout(() => {
-        startTimer()
+        if (isMounted) startTimer()
       }, 100)
     }
   }, 1000)
@@ -113,6 +116,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
+  isMounted = false
   if (intervalId) {
     clearInterval(intervalId)
   }

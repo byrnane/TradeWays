@@ -107,7 +107,7 @@
 </template>
 
 <script setup>
-import { inject, onMounted, computed } from 'vue'
+import { computed, onMounted, watch, inject } from 'vue'
 import { useAuthStore } from '../stores/auth.js'
 import { useUIStore } from '../stores/ui.js'
 import { useI18n } from 'vue-i18n'
@@ -127,10 +127,11 @@ const uiStore = useUIStore()
 const { t } = useI18n()
 const setPageHeader = inject('setPageHeader')
 
-onMounted(() => {
+const updatePageHeader = () => {
   if (authStore.isAuthenticated && authStore.character) {
+    const name = authStore.characterData?.name || authStore.character.name
     setPageHeader({
-      title: `${t('dashboard.welcome')}, ${authStore.character.name}`,
+      title: `${t('dashboard.welcome')}, ${name}`,
       subtitle: 'Чем займемся сегодня?',
       icon: HomeIcon
     })
@@ -141,6 +142,15 @@ onMounted(() => {
       icon: HomeIcon
     })
   }
+}
+
+onMounted(() => {
+  updatePageHeader()
+})
+
+// Watch for character changes
+watch(() => authStore.currentCharacterId, () => {
+  updatePageHeader()
 })
 
 const handleImageError = (event) => {

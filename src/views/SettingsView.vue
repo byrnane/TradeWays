@@ -98,10 +98,11 @@ import { inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Cog6ToothIcon } from '@heroicons/vue/24/outline'
 import { useAuthStore } from '../stores/auth.js'
+import { usePageHeader } from '../composables/usePageHeader.js'
 
-const { locale } = useI18n()
+const { locale, t } = useI18n()
 const authStore = useAuthStore()
-const setPageHeader = inject('setPageHeader')
+const { setPageTitle } = usePageHeader()
 
 const languages = [
   { code: 'ru', name: 'Русский' },
@@ -112,14 +113,6 @@ const themes = [
   { value: 'dark', label: 'Тёмная' },
   { value: 'light', label: 'Светлая' },
 ]
-
-onMounted(() => {
-  setPageHeader({
-    title: t('settings.title'),
-    subtitle: '',
-    icon: Cog6ToothIcon
-  })
-})
 
 const theme = ref('dark')
 const dataRefreshInterval = ref(10)
@@ -147,6 +140,8 @@ const saveSettings = () => {
 }
 
 onMounted(() => {
+  setPageTitle(t('settings.title'), '', Cog6ToothIcon)
+  
   // Load saved settings
   theme.value = localStorage.getItem('theme') || 'dark'
   

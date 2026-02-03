@@ -9,9 +9,6 @@ export function useCharacterStatus(character) {
       // Convert to boolean if it's a string
       const isOnline = typeof char.online === 'string' ? char.online === 'true' : Boolean(char.online)
       
-      // Debug logging
-      console.log(`Character ${char.name || char.character_id} online status:`, char.online, 'type:', typeof char.online, 'converted:', isOnline)
-      
       if (isOnline) {
         return { text: 'Online', color: 'text-green-600', bgColor: 'bg-green-50' }
       } else {
