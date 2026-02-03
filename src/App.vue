@@ -9,7 +9,7 @@
       <Sidebar :isOpen="sidebarOpen" @close="sidebarOpen = false" />
       
       <!-- Page Content -->
-      <main class="flex-1 lg:pl-64">
+      <main class="flex-1 lg:pl-64 pt-20">
         <router-view />
       </main>
     </div>

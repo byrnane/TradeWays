@@ -1,42 +1,45 @@
 <template>
   <header class="fixed top-0 left-0 right-0 z-40 bg-neutral-900/95 backdrop-blur-sm border-b border-neutral-800">
     <div class="flex items-center justify-between px-6 py-4">
-      <!-- Mobile Menu Button -->
-      <button 
-        @click="$emit('toggleSidebar')"
-        class="lg:hidden p-2 rounded-lg text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
-          <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-        </svg>
-      </button>
+      <!-- Left Section -->
+      <div class="flex items-center gap-4">
+        <!-- Mobile Menu Button -->
+        <button 
+          @click="$emit('toggleSidebar')"
+          class="lg:hidden p-2 rounded-lg text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+          </svg>
+        </button>
 
-      <!-- Logo and Title (Desktop) -->
-      <div class="hidden lg:flex items-center gap-4">
-        <router-link to="/" class="flex items-center gap-3">
-          <div class="grid h-10 w-10 place-items-center rounded-lg bg-neutral-800 ring-1 ring-neutral-700 shadow-soft text-neutral-200 font-semibold">
-            EH
-          </div>
-          <div>
-            <h1 class="text-xl font-bold tracking-tight text-neutral-100">{{ $t('nav.title') }}</h1>
-            <p class="text-sm text-neutral-400">{{ $t('nav.subtitle') }}</p>
-          </div>
-        </router-link>
+        <!-- Logo and Title (Desktop) -->
+        <div class="hidden lg:flex items-center gap-4">
+          <router-link to="/" class="flex items-center gap-3">
+            <div class="grid h-10 w-10 place-items-center rounded-lg bg-neutral-800 ring-1 ring-neutral-700 shadow-soft text-neutral-200 font-semibold">
+              EH
+            </div>
+            <div>
+              <h1 class="text-xl font-bold tracking-tight text-neutral-100">{{ $t('nav.title') }}</h1>
+              <p class="text-sm text-neutral-400">{{ $t('nav.subtitle') }}</p>
+            </div>
+          </router-link>
+        </div>
+
+        <!-- Logo (Mobile) -->
+        <div class="lg:hidden">
+          <router-link to="/" class="flex items-center gap-3">
+            <div class="grid h-10 w-10 place-items-center rounded-lg bg-neutral-800 ring-1 ring-neutral-700 shadow-soft text-neutral-200 font-semibold">
+              EH
+            </div>
+            <div>
+              <h1 class="text-xl font-bold tracking-tight text-neutral-100">EVE Horizon</h1>
+            </div>
+          </router-link>
+        </div>
       </div>
 
-      <!-- Logo (Mobile) -->
-      <div class="lg:hidden">
-        <router-link to="/" class="flex items-center gap-3">
-          <div class="grid h-10 w-10 place-items-center rounded-lg bg-neutral-800 ring-1 ring-neutral-700 shadow-soft text-neutral-200 font-semibold">
-            EH
-          </div>
-          <div>
-            <h1 class="text-xl font-bold tracking-tight text-neutral-100">EVE Horizon</h1>
-          </div>
-        </router-link>
-      </div>
-
-      <!-- Spacer -->
+      <!-- Right Section -->
       <div class="flex items-center gap-3">
         <!-- Language Switcher -->
         <div class="relative" @click="toggleLanguageDropdown">
@@ -108,16 +111,6 @@
           </div>
         </div>
 
-        <!-- Profiles Button (if logged in) -->
-        <router-link 
-          v-if="authStore.isAuthenticated"
-          to="/profiles" 
-          class="flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-300 hover:text-neutral-100 hover:bg-neutral-800 transition-colors"
-        >
-          <UserIcon class="h-5 w-5" />
-          <span class="text-sm font-medium">{{ $t('common.profile') }}</span>
-        </router-link>
-
         <!-- Settings Button -->
         <router-link 
           to="/settings" 
@@ -126,6 +119,112 @@
           <Cog6ToothIcon class="h-5 w-5" />
           <span class="text-sm font-medium">{{ $t('common.settings') }}</span>
         </router-link>
+        
+        <!-- Player Profile (if logged in) -->
+        <div v-if="authStore.isAuthenticated && authStore.character" class="relative" @click="toggleProfileDropdown">
+          <button class="flex items-center gap-3 p-3 rounded-lg hover:bg-gradient-to-r hover:from-neutral-800/50 hover:to-neutral-700/50 transition-all duration-200 bg-gradient-to-br from-neutral-900/80 to-neutral-800/40 backdrop-blur-sm">
+            <img 
+              :src="`https://images.evetech.net/characters/${authStore.character.character_id}/portrait?size=128`"
+              :alt="authStore.character.name"
+              class="h-12 w-12 rounded-full ring-2 ring-accent/20 flex-shrink-0"
+              @error="handleImageError"
+            />
+            <div class="hidden sm:block text-left">
+              <div class="font-medium text-neutral-100">{{ authStore.character.name }}</div>
+              <div class="text-sm text-neutral-400">{{ authStore.character.corporation_name }}</div>
+              <div class="flex items-center gap-1 mt-1">
+                <div class="h-2 w-2 rounded-full" :class="authStore.isRefreshing ? 'bg-yellow-500 animate-pulse' : 'bg-green-500'"></div>
+                <span class="text-xs text-neutral-500">{{ authStore.isRefreshing ? $t('status.refreshing') : $t('status.active') }}</span>
+              </div>
+            </div>
+            <ChevronDownIcon class="h-4 w-4 text-neutral-400" :class="{ 'rotate-180': profileDropdownOpen }" />
+          </button>
+          
+          <!-- Profile Dropdown -->
+          <div v-if="profileDropdownOpen" class="absolute right-0 top-full mt-2 w-80 bg-neutral-800 border border-neutral-700 rounded-lg shadow-lg py-2">
+            <!-- Current Profile Header (clickable) -->
+            <button 
+              @click.stop="switchCharacter(authStore.character)"
+              class="w-full px-4 py-3 border-b border-neutral-700 hover:bg-neutral-700/50 transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <img 
+                  :src="`https://images.evetech.net/characters/${authStore.character.character_id}/portrait?size=64&tenant=tranquility`"
+                  :alt="authStore.character.name"
+                  class="h-12 w-12 rounded-full border-2 border-neutral-600"
+                  @error="handleImageError"
+                  crossorigin="anonymous"
+                  referrerpolicy="no-referrer"
+                />
+                <div class="flex-1 text-left">
+                  <div class="font-medium text-neutral-100">{{ authStore.character.name }}</div>
+                  <div class="text-sm text-neutral-400">{{ authStore.character.corporation_name }}</div>
+                  <!-- Auth Status moved here -->
+                  <div class="mt-1">
+                    <AuthStatus />
+                  </div>
+                </div>
+              </div>
+            </button>
+            
+            <!-- Character List -->
+            <div v-if="authStore.characters.length > 1" class="py-2 max-h-60 overflow-y-auto">
+              <div v-for="char in authStore.characters" :key="char.character_id">
+                <button
+                  v-if="char.character_id !== authStore.character.character_id"
+                  @click.stop="switchCharacter(char)"
+                  class="w-full px-4 py-2 text-left text-sm hover:bg-neutral-700 flex items-center gap-3"
+                >
+                  <img 
+                    :src="`https://images.evetech.net/characters/${char.character_id}/portrait?size=32&tenant=tranquility`"
+                    :alt="char.name"
+                    class="h-8 w-8 rounded-full"
+                    @error="handleImageError"
+                    crossorigin="anonymous"
+                    referrerpolicy="no-referrer"
+                  />
+                  <div class="flex-1">
+                    <div class="font-medium text-neutral-100">{{ char.name }}</div>
+                    <div class="text-xs text-neutral-400">{{ char.corporation_name }}</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+            
+            <!-- All Characters Button -->
+            <div class="py-2">
+              <router-link 
+                to="/profiles"
+                @click.stop="profileDropdownOpen = false"
+                class="block px-4 py-2 text-sm text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 transition-colors"
+              >
+                {{ $t('profile.allCharacters') }}
+              </router-link>
+            </div>
+            
+            <!-- Add Profile Section -->
+            <div class="border-t border-neutral-700 py-2">
+              <button
+                @click.stop="addNewProfile"
+                class="w-full px-4 py-2 text-left text-sm text-neutral-300 hover:bg-neutral-700 hover:text-neutral-100 transition-colors flex items-center gap-2"
+              >
+                <PlusIcon class="h-4 w-4" />
+                {{ $t('profile.addCharacter') }}
+              </button>
+            </div>
+            
+            <!-- Logout -->
+            <div class="border-t border-neutral-700 py-2">
+              <button
+                @click.stop="logout"
+                class="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-900/20 hover:text-red-300 transition-colors flex items-center gap-2"
+              >
+                <ArrowRightOnRectangleIcon class="h-4 w-4" />
+                {{ $t('common.logout') }}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </header>
@@ -143,8 +242,11 @@ import {
   Cog6ToothIcon,
   SunIcon,
   MoonIcon,
-  ComputerDesktopIcon
+  ComputerDesktopIcon,
+  PlusIcon,
+  ArrowRightOnRectangleIcon
 } from '@heroicons/vue/24/outline'
+import AuthStatus from './AuthStatus.vue'
 
 const emit = defineEmits(['toggle-sidebar'])
 
@@ -156,6 +258,7 @@ const settingsStore = useSettingsStore()
 
 const languageDropdownOpen = ref(false)
 const themeDropdownOpen = ref(false)
+const profileDropdownOpen = ref(false)
 
 const currentLocale = computed(() => locale.value)
 const currentTheme = computed(() => settingsStore.theme)
@@ -175,11 +278,19 @@ const themeText = computed(() => {
 const toggleLanguageDropdown = () => {
   languageDropdownOpen.value = !languageDropdownOpen.value
   themeDropdownOpen.value = false
+  profileDropdownOpen.value = false
 }
 
 const toggleThemeDropdown = () => {
   themeDropdownOpen.value = !themeDropdownOpen.value
   languageDropdownOpen.value = false
+  profileDropdownOpen.value = false
+}
+
+const toggleProfileDropdown = () => {
+  profileDropdownOpen.value = !profileDropdownOpen.value
+  languageDropdownOpen.value = false
+  themeDropdownOpen.value = false
 }
 
 const setLanguage = (lang) => {
@@ -193,14 +304,49 @@ const setTheme = (theme) => {
   themeDropdownOpen.value = false
 }
 
+const switchCharacter = (character) => {
+  authStore.switchCharacter(character.character_id)
+  profileDropdownOpen.value = false
+  // Reload the page to refresh all data
+  window.location.reload()
+}
+
+const addNewProfile = () => {
+  profileDropdownOpen.value = false
+  // TODO: Implement multi-profile support
+  // For now, just redirect to auth page
+  router.push('/auth')
+}
+
+const logout = () => {
+  profileDropdownOpen.value = false
+  authStore.logout()
+  authStore.stopAutoRefresh()
+  router.push('/')
+}
+
 const closeDropdowns = (e) => {
   if (!e.target.closest('.relative')) {
     languageDropdownOpen.value = false
     themeDropdownOpen.value = false
+    profileDropdownOpen.value = false
   }
 }
 
+const handleImageError = (event) => {
+  event.target.src = `data:image/svg+xml;base64,${btoa(`
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+    </svg>
+  `)}`
+  event.target.classList.add('p-2', 'bg-neutral-800')
+}
+
 onMounted(() => {
+  // Debug character data
+  console.log('Header mounted - authStore.character:', authStore.character)
+  console.log('Header mounted - isAuthenticated:', authStore.isAuthenticated)
+  
   // Initialize theme
   const cleanup = settingsStore.initTheme()
   

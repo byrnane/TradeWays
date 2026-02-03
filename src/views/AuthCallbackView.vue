@@ -104,12 +104,10 @@ onMounted(async () => {
       ...fullCharacterData
     }
     
-    authStore.setTokens(
-      tokenData.access_token,
-      tokenData.refresh_token,
-      tokenData.expires_in
-    )
-    authStore.setCharacter(mergedCharacterData)
+    authStore.addCharacter(mergedCharacterData, tokenData)
+    
+    // Start auto-refresh mechanism
+    authStore.startAutoRefresh()
     
     // Load essential character data (wallet, location, etc.)
     try {

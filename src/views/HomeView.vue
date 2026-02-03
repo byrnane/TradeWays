@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-neutral-950 pt-20">
+  <div class="min-h-screen bg-neutral-950">
     <div class="max-w-7xl mx-auto px-6 py-8">
         <!-- Welcome Section -->
       <div class="text-center mb-8">
@@ -15,10 +15,12 @@
       <div v-if="authStore.isAuthenticated && authStore.character" class="bg-neutral-900 rounded-xl p-8 border border-neutral-800 mb-8">
         <div class="flex items-start gap-6">
           <img 
-            :src="`https://images.evetech.net/characters/${authStore.character.character_id}/portrait?size=128`"
+            :src="`https://images.evetech.net/characters/${authStore.character.character_id}/portrait?size=128&tenant=tranquility`"
             :alt="authStore.character.name"
             class="h-32 w-32 rounded-full border-4 border-neutral-700 flex-shrink-0"
             @error="handleImageError"
+            crossorigin="anonymous"
+            referrerpolicy="no-referrer"
           />
           <div class="flex-1">
             <h2 class="text-3xl font-bold text-neutral-100 mb-2">{{ authStore.character.name }}</h2>

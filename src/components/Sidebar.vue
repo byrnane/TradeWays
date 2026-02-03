@@ -31,25 +31,6 @@
         {{ item.name }}
       </router-link>
     </nav>
-
-    <!-- Character Info (when logged in) -->
-    <div v-if="authStore.isAuthenticated" class="absolute bottom-0 left-0 right-0 p-4 border-t border-neutral-800">
-      <router-link to="/" class="block group cursor-pointer">
-        <div class="flex items-center gap-3">
-          <img 
-            :src="`https://images.evetech.net/characters/${authStore.character?.character_id}/portrait?size=64`"
-            :alt="authStore.character?.name"
-            class="h-10 w-10 rounded-full border-2 border-neutral-700 group-hover:border-accent/50 transition-colors"
-            @error="handleImageError"
-          />
-          <div class="flex-1 min-w-0">
-            <div class="text-sm font-medium text-neutral-100 truncate group-hover:text-accent transition-colors">{{ authStore.character?.name }}</div>
-            <div class="text-base font-bold text-accent mt-1">{{ uiStore.formatISKShort(authStore.characterData?.wallet || 0) }}</div>
-            <DataUpdateTimer />
-          </div>
-        </div>
-      </router-link>
-    </div>
   </div>
 
   <!-- Overlay for mobile -->
@@ -57,11 +38,15 @@
 </template>
 
 <script setup>
-import { computed, h } from 'vue';
+import { computed } from 'vue';
 import { useAuthStore } from '../stores/auth.js';
-import { useUIStore } from '../stores/ui.js';
 import { useRoute } from 'vue-router';
-import DataUpdateTimer from './DataUpdateTimer.vue';
+import { useI18n } from 'vue-i18n';
+import { 
+  HomeIcon, 
+  UserGroupIcon, 
+  CalculatorIcon 
+} from '@heroicons/vue/24/outline';
 
 defineProps({
   isOpen: {
@@ -74,41 +59,25 @@ const emit = defineEmits(['close']);
 
 const authStore = useAuthStore();
 const route = useRoute();
-const uiStore = useUIStore();
+const { t } = useI18n();
 
-const navigation = [
+const navigation = computed(() => [
   {
-    name: 'Калькуляторы',
+    name: t('nav.home'),
+    href: '/',
+    icon: HomeIcon
+  },
+  {
+    name: t('nav.profiles'),
+    href: '/profiles',
+    icon: UserGroupIcon
+  },
+  {
+    name: t('nav.calculators'),
     href: '/calculators',
-    icon: () => h('svg', { 
-      xmlns: 'http://www.w3.org/2000/svg', 
-      fill: 'none', 
-      viewBox: '0 0 24 24', 
-      stroke: 'currentColor',
-      'stroke-width': '1.5'
-    }, [
-      h('path', { 
-        'stroke-linecap': 'round', 
-        'stroke-linejoin': 'round', 
-        d: 'M9 7.5h3m3 0h3m-3 0h-3m-3 0H3.375a1.125 1.125 0 0 1-1.125-1.125V4.875c0-.621.504-1.125 1.125-1.125h17.25c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125Zm-12 0v6m0 0v3.75A1.875 1.875 0 0 0 9.375 18h5.25A1.875 1.875 0 0 0 16.5 16.125v-3.75m-12 0H3.375a1.125 1.125 0 0 1-1.125-1.125V9.375c0-.621.504-1.125 1.125-1.125h17.25c.621 0 1.125.504 1.125 1.125v1.5c0 .621-.504 1.125-1.125 1.125Z' 
-      })
-    ])
+    icon: CalculatorIcon
   }
-]
-
-const formatISK = (value) => {
-  if (!value || value === 0) return '0.00';
-  return new Intl.NumberFormat('ru-RU').format(value);
-};
-
-const handleImageError = (event) => {
-  event.target.src = `data:image/svg+xml;base64,${btoa(`
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-6 w-6">
-      <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
-    </svg>
-  `)}`
-  event.target.classList.add('p-2', 'bg-neutral-800');
-};
+])
 
 const handleNavigation = () => {
   // Close sidebar on mobile after navigation
