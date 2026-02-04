@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getTokens, setTokens, getCurrentCharacterId, isTokenExpired } from '../utils/tokenUtils.js'
+import { getTokens, setTokens, getCurrentCharacterId, isTokenExpired, setTokenForCharacter } from '../utils/tokenUtils.js'
 
 export const createInterceptors = (axios) => {
   // Request interceptor - add auth token
@@ -70,13 +70,11 @@ export const createInterceptors = (axios) => {
               const newTokens = await refreshAccessToken(charTokens.refresh_token)
               
               // Update tokens for this character
-              allTokens[characterId] = {
+              await setTokenForCharacter(characterId, {
                 access_token: newTokens.access_token,
                 refresh_token: newTokens.refresh_token || charTokens.refresh_token,
                 expires_at: Date.now() + (newTokens.expires_in * 1000)
-              }
-              
-              setTokens(allTokens)
+              })
               
               // Retry the original request with new token
               error.config.headers.Authorization = `Bearer ${newTokens.access_token}`
@@ -85,23 +83,31 @@ export const createInterceptors = (axios) => {
           }
         } catch (refreshError) {
           console.error('Token refresh failed:', refreshError)
+          // Only clear tokens for this specific character, not all
+          if (characterId) {
+            const tokens = getTokens()
+            delete tokens[characterId]
+            setTokens(tokens)
+            
+            // If this was the current character, we need to re-auth
+            if (characterId === getCurrentCharacterId()) {
+              localStorage.removeItem('characters')
+              localStorage.removeItem('current_character_id')
+              localStorage.removeItem('esi_tokens')
+              
+              // Clear character data
+              Object.keys(localStorage).forEach(key => {
+                if (key.startsWith('character_data_')) {
+                  localStorage.removeItem(key)
+                }
+              })
+              
+              // Reload page to trigger re-auth
+              window.location.reload()
+            }
+          }
         }
       }
-      
-      // Clear all auth data on failed refresh
-      localStorage.removeItem('characters')
-      localStorage.removeItem('current_character_id')
-      localStorage.removeItem('esi_tokens')
-      
-      // Clear character data
-      Object.keys(localStorage).forEach(key => {
-        if (key.startsWith('character_data_')) {
-          localStorage.removeItem(key)
-        }
-      })
-      
-      // Reload page to trigger re-auth
-      window.location.reload()
     }
 
     // Handle ESI rate limiting (error limited)

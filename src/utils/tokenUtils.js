@@ -17,7 +17,26 @@ export const setTokens = (tokens) => {
   try {
     localStorage.setItem('esi_tokens', JSON.stringify(tokens))
   } catch (error) {
-    console.error('Failed to save tokens to localStorage:', error)
+    if (error.name === 'QuotaExceededError') {
+      console.error('LocalStorage quota exceeded, attempting to clean up...')
+      // Try to clean up old tokens
+      try {
+        const allTokens = tokens
+        const tokenEntries = Object.entries(allTokens)
+        
+        // Sort by expiration time and keep only the newest half
+        tokenEntries.sort((a, b) => (b[1].expires_at || 0) - (a[1].expires_at || 0))
+        const keepCount = Math.floor(tokenEntries.length / 2)
+        const cleanedTokens = Object.fromEntries(tokenEntries.slice(0, keepCount))
+        
+        localStorage.setItem('esi_tokens', JSON.stringify(cleanedTokens))
+        console.warn(`Cleaned up ${tokenEntries.length - keepCount} old tokens`)
+      } catch (cleanupError) {
+        console.error('Failed to clean up tokens:', cleanupError)
+      }
+    } else {
+      console.error('Failed to save tokens to localStorage:', error)
+    }
   }
 }
 
@@ -27,8 +46,26 @@ export const getTokenForCharacter = (characterId) => {
 }
 
 export const setTokenForCharacter = async (characterId, tokenData) => {
-  // Wait for any ongoing operation
+  // Validate characterId
+  if (!characterId || typeof characterId !== 'number' || characterId <= 0) {
+    throw new Error('Invalid characterId provided')
+  }
+  
+  // Validate tokenData
+  if (!tokenData || typeof tokenData !== 'object') {
+    throw new Error('Invalid tokenData provided')
+  }
+  
+  // Wait for any ongoing operation with timeout
+  const startTime = Date.now()
+  const timeout = 5000 // 5 seconds timeout
+  
   while (tokenOperationLock) {
+    if (Date.now() - startTime > timeout) {
+      console.error('Token operation timeout - possible deadlock')
+      tokenOperationLock = false // Force unlock
+      break
+    }
     await new Promise(resolve => setTimeout(resolve, 10))
   }
   

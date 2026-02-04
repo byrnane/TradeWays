@@ -46,6 +46,16 @@ export const refreshAccessToken = async (refreshToken) => {
   const clientSecret = import.meta.env.VITE_ESI_CLIENT_SECRET
   
   const response = await window.__app_api__.auth.refreshAccessToken(refreshToken, clientId, clientSecret)
+  
+  // Validate response structure
+  if (!response.data || !response.data.access_token) {
+    throw new Error('Invalid token refresh response: missing access_token')
+  }
+  
+  if (!response.data.expires_in || typeof response.data.expires_in !== 'number') {
+    throw new Error('Invalid token refresh response: invalid expires_in')
+  }
+  
   return response.data
 }
 
