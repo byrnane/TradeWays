@@ -25,7 +25,7 @@
           </div>
           <div class="bg-neutral-800 rounded-lg p-4">
             <div class="text-sm text-neutral-400 mb-1">{{ $t('profile.location') }}</div>
-            <CharacterLocation :character="freshCharacterData" view-mode="full" :show-breadcrumb="true" :show-position="true" />
+            <CharacterLocation :character="{ ...authStore.character, ...freshCharacterData }" view-mode="full" :show-breadcrumb="true" :show-position="true" />
           </div>
           <div class="bg-neutral-800 rounded-lg p-4">
             <div class="text-sm text-neutral-400 mb-1">{{ $t('profile.securityStatus') }}</div>

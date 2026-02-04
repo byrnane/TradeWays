@@ -35,7 +35,7 @@
             <div class="flex justify-between text-sm">
               <span class="text-neutral-400">{{ $t('profile.location') }}</span>
               <CharacterLocation 
-                :character="getCharacterData(char.character_id)" 
+                :character="{ ...char, ...getCharacterData(char.character_id) }" 
                 view-mode="compact" 
                 class="text-neutral-200 text-right"
               />

@@ -170,6 +170,13 @@ export const useAuthStore = defineStore('auth', () => {
   const addCharacter = async (charData, tokenData) => {
     const newCharacter = { ...charData }
     
+    // Save tokens FIRST before updating any reactive state
+    await setTokenForCharacter(newCharacter.character_id, {
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
+      expires_at: Date.now() + (tokenData.expires_in * 1000)
+    })
+    
     // Check if character already exists
     const existingIndex = characters.value.findIndex(char => char.character_id === newCharacter.character_id)
     
@@ -179,15 +186,8 @@ export const useAuthStore = defineStore('auth', () => {
       characters.value.push(newCharacter)
     }
     
-    // Set as current character
+    // Set as current character AFTER token is saved
     currentCharacterId.value = newCharacter.character_id
-    
-    // Save tokens
-    await setTokenForCharacter(newCharacter.character_id, {
-      access_token: tokenData.access_token,
-      refresh_token: tokenData.refresh_token,
-      expires_at: Date.now() + (tokenData.expires_in * 1000)
-    })
     
     // Save to localStorage
     saveCharacters()
@@ -270,9 +270,8 @@ export const useAuthStore = defineStore('auth', () => {
       return data.access_token
     } catch (error) {
       console.error('Failed to refresh token:', error)
-      if (error.response?.status === 400 || error.response?.status === 401) {
-        await removeCharacter(currentCharacterId.value)
-      }
+      // Don't remove character automatically on token refresh error
+      // User should manually reauthorize if needed
       throw error
     } finally {
       isRefreshing.value = false
@@ -297,9 +296,8 @@ export const useAuthStore = defineStore('auth', () => {
       return data.access_token
     } catch (error) {
       console.error(`Failed to refresh token for character ${characterId}:`, error)
-      if (error.response?.status === 400 || error.response?.status === 401) {
-        await removeCharacter(characterId)
-      }
+      // Don't remove character automatically on token refresh error
+      // User should manually reauthorize if needed
       throw error
     }
   }

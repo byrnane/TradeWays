@@ -30,7 +30,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '../stores/auth.js'
 import { exchangeCodeForTokens, verifyToken } from '../services/esi.js'
@@ -140,7 +140,8 @@ onMounted(async () => {
     characterName.value = mergedCharacterData.name
     success.value = true
     
-    // Redirect immediately
+    // Redirect after ensuring store updates are propagated
+    await nextTick()
     router.push('/')
     
   } catch (err) {
