@@ -3,15 +3,16 @@ import { ref, computed } from 'vue'
 import { refreshAccessToken as esiRefreshToken } from '../services/esi.js'
 import { saveToStorage, removeFromStorage, STORAGE_KEYS, needsRefresh } from '../services/storage.js'
 import { useAllCharactersData } from '../composables/useAllCharactersData.js'
+import { useCharacterStatusStore } from '../composables/useCharacterStatusStore.js'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
   const characters = ref([])
   const currentCharacterId = ref(null) // Always store as number
-  const characterData = ref({})
+  const characterData = ref({}) // Current character data
+  const charactersData = ref({}) // All characters data keyed by characterId
   const isLoading = ref(false)
   const isRefreshing = ref(false)
-  const dataUpdateInterval = ref(null)
   const isInitializing = ref(true) // Add initialization state
   
   // Get all characters data manager
@@ -61,10 +62,27 @@ export const useAuthStore = defineStore('auth', () => {
         saveCurrentCharacterId()
       }
       
-      // Load character data
-      const savedData = localStorage.getItem('esi_character_data')
-      if (savedData) {
-        characterData.value = JSON.parse(savedData)
+      // Load all characters data from localStorage
+      characters.value.forEach(char => {
+        const dataKey = `character_data_${char.character_id}`
+        const storedData = localStorage.getItem(dataKey)
+        if (storedData) {
+          try {
+            const parsed = JSON.parse(storedData)
+            charactersData.value[char.character_id] = parsed
+            
+            // Update global status store
+            const { updateStatus } = useCharacterStatusStore()
+            updateStatus(char.character_id, parsed?.online)
+          } catch (error) {
+            console.error(`Failed to load data for character ${char.character_id}:`, error)
+          }
+        }
+      })
+      
+      // Set current character data
+      if (currentCharacterId.value) {
+        characterData.value = charactersData.value[currentCharacterId.value] || {}
       }
     } catch (error) {
       console.error('Failed to load from storage:', error)
@@ -94,6 +112,29 @@ export const useAuthStore = defineStore('auth', () => {
     const char = character.value
     return char ? char.expires_at : 0
   })
+
+  // Get data for any character
+  const getCharacterData = (characterId) => {
+    return charactersData.value[characterId] || null
+  }
+
+  // Set data for any character
+  const setCharacterDataById = (characterId, data) => {
+    charactersData.value[characterId] = data
+    
+    // Update global status store
+    const { updateStatus } = useCharacterStatusStore()
+    updateStatus(characterId, data?.online)
+    
+    // Also update current character data if it's the active one
+    if (characterId === currentCharacterId.value) {
+      characterData.value = data
+    }
+    
+    // Save to localStorage
+    const dataKey = `character_data_${characterId}`
+    localStorage.setItem(dataKey, JSON.stringify(data))
+  }
 
   const isAuthenticated = computed(() => {
   // Check if we have any characters
@@ -210,19 +251,8 @@ export const useAuthStore = defineStore('auth', () => {
         character.value = char
       }
       
-      // Load character data from localStorage instead of clearing it
-      const dataKey = `character_data_${characterId}`
-      const storedData = localStorage.getItem(dataKey)
-      if (storedData) {
-        try {
-          characterData.value = JSON.parse(storedData)
-        } catch (error) {
-          console.error('Failed to load character data:', error)
-          characterData.value = {}
-        }
-      } else {
-        characterData.value = {}
-      }
+      // Set current character data from the unified storage
+      characterData.value = charactersData.value[characterId] || {}
       
       // Stop periodic updates and restart them
       stopPeriodicUpdates()
@@ -248,6 +278,10 @@ export const useAuthStore = defineStore('auth', () => {
         delete tokens[characterId]
         localStorage.setItem('esi_tokens', JSON.stringify(tokens))
       }
+      
+      // Remove character data from unified storage
+      delete charactersData.value[characterId]
+      localStorage.removeItem(`character_data_${characterId}`)
       
       // If removing current character, switch to another or logout
       if (currentCharacterId.value === characterId) {
@@ -306,10 +340,6 @@ export const useAuthStore = defineStore('auth', () => {
     
     // Also save tokens
     saveTokensToSession()
-  }
-
-  const saveCharacterData = () => {
-    saveToStorage(STORAGE_KEYS.CHARACTER_DATA, characterData.value)
   }
 
   const setTokens = (token, refresh, expiresIn) => {
@@ -430,14 +460,21 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   const setCharacterData = (data) => {
+    if (!currentCharacterId.value) return
+    
+    // Update both unified storage and current character data
+    charactersData.value[currentCharacterId.value] = data
     characterData.value = data
-    saveCharacterData()
+    
+    // Save to localStorage
+    const dataKey = `character_data_${currentCharacterId.value}`
+    localStorage.setItem(dataKey, JSON.stringify(data))
     saveToStorage(STORAGE_KEYS.LAST_UPDATE, Date.now())
   }
 
   // Get data for any character
   const getCharacterDataById = (characterId) => {
-    return allCharactersManager.getCharacterData(characterId)
+    return charactersData.value[characterId] || null
   }
   
   // Update data for all characters
@@ -483,31 +520,6 @@ export const useAuthStore = defineStore('auth', () => {
     // Clear localStorage for current character
     removeFromStorage(STORAGE_KEYS.CHARACTER_DATA)
     removeFromStorage(STORAGE_KEYS.CURRENT_CHARACTER_ID)
-  }
-
-  const logoutAll = () => {
-    // Clear all data
-    clearAll()
-  }
-
-  const clearAll = () => {
-    characters.value = []
-    currentCharacterId.value = null
-    characterData.value = {}
-    
-    // Clear localStorage
-    removeFromStorage(STORAGE_KEYS.CHARACTERS)
-    removeFromStorage(STORAGE_KEYS.CURRENT_CHARACTER_ID)
-    removeFromStorage(STORAGE_KEYS.CHARACTER_DATA)
-    removeFromStorage(STORAGE_KEYS.LAST_UPDATE)
-    localStorage.removeItem('esi_tokens')
-    
-    // Clear sessionStorage (for backward compatibility)
-    sessionStorage.removeItem('esi_session_tokens')
-    sessionStorage.removeItem('esi_refresh_tokens')
-    
-    // Stop periodic updates
-    stopPeriodicUpdates()
   }
 
   // Initialize store (synchronous part)
@@ -693,11 +705,7 @@ export const useAuthStore = defineStore('auth', () => {
   
   // Stop periodic updates
   const stopPeriodicUpdates = () => {
-    // Stop both auth store and manager updates
-    if (dataUpdateInterval.value) {
-      clearInterval(dataUpdateInterval.value)
-      dataUpdateInterval.value = null
-    }
+    // Stop manager updates
     allCharactersManager.stopPeriodicUpdates()
   }
 
@@ -714,6 +722,7 @@ export const useAuthStore = defineStore('auth', () => {
     characters,
     currentCharacterId,
     characterData,
+    charactersData,
     isLoading,
     isRefreshing,
     isInitializing,
@@ -738,13 +747,14 @@ export const useAuthStore = defineStore('auth', () => {
     refreshAccessToken,
     refreshCharacterToken,
     logout,
-    logoutAll,
     initializeAsync,
     updateCharacterData,
     updateAllCharactersData,
     updateSpecificCharacterData,
     getCharacterDataById,
+    getCharacterData,
     setCharacterData,
+    setCharacterDataById,
     startPeriodicUpdates,
     stopPeriodicUpdates
   }

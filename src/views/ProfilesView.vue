@@ -19,7 +19,7 @@
             referrerpolicy="no-referrer"
           />
           <div class="absolute top-3 left-3">
-            <CharacterStatus :character="getCharacterData(char.character_id)" />
+            <CharacterStatus :character-id="char.character_id" />
           </div>
         </div>
         <div class="p-6">
@@ -161,7 +161,7 @@ onUnmounted(() => {
 })
 
 const getCharacterData = (characterId) => {
-  return allCharactersData.getCharacterData(characterId)
+  return authStore.getCharacterData(characterId)
 }
 
 const refreshCharacter = async (characterId) => {

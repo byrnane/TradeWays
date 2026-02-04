@@ -13,7 +13,7 @@
       <div class="flex-1">
         <div class="flex items-center gap-3 mb-2">
           <h2 class="text-3xl font-bold text-neutral-100">{{ authStore.character.name }}</h2>
-          <CharacterStatus :character="authStore.characterData" />
+          <CharacterStatus :character-id="authStore.currentCharacterId" />
         </div>
         <p class="text-lg text-neutral-400 mb-4">{{ authStore.character.corporation_name }}</p>
         <p v-if="authStore.character.alliance_name" class="text-neutral-400 mb-4">{{ authStore.character.alliance_name }}</p>
@@ -21,16 +21,16 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <div class="bg-neutral-800 rounded-lg p-4">
             <div class="text-sm text-neutral-400 mb-1">{{ $t('profile.balance') }}</div>
-            <div class="text-xl font-bold text-accent">{{ uiStore.formatISKShort(authStore.characterData?.wallet || 0) }}</div>
+            <div class="text-xl font-bold text-accent">{{ uiStore.formatISKShort(freshCharacterData?.wallet || 0) }}</div>
           </div>
           <div class="bg-neutral-800 rounded-lg p-4">
             <div class="text-sm text-neutral-400 mb-1">{{ $t('profile.location') }}</div>
-            <CharacterLocation :character="authStore.characterData" view-mode="full" :show-breadcrumb="true" :show-position="true" />
+            <CharacterLocation :character="freshCharacterData" view-mode="full" :show-breadcrumb="true" :show-position="true" />
           </div>
           <div class="bg-neutral-800 rounded-lg p-4">
             <div class="text-sm text-neutral-400 mb-1">{{ $t('profile.securityStatus') }}</div>
-            <div class="text-xl font-bold" :class="authStore.character.security_status < -5 ? 'text-red-400' : authStore.character.security_status < 0 ? 'text-yellow-400' : 'text-green-400'">
-              {{ authStore.character.security_status?.toFixed(2) || '0.00' }}
+            <div class="text-xl font-bold" :class="freshCharacterData?.security_status < -5 ? 'text-red-400' : freshCharacterData?.security_status < 0 ? 'text-yellow-400' : 'text-green-400'">
+              {{ freshCharacterData?.security_status?.toFixed(2) || '0.00' }}
             </div>
           </div>
         </div>
@@ -112,12 +112,9 @@ import { useAuthStore } from '../stores/auth.js'
 import { useUIStore } from '../stores/ui.js'
 import { useI18n } from 'vue-i18n'
 import { 
-  CalculatorIcon,
-  Cog6ToothIcon,
-  PlusIcon,
+  HomeIcon,
   UserCircleIcon,
-  ArrowRightOnRectangleIcon,
-  HomeIcon
+  ArrowRightOnRectangleIcon
 } from '@heroicons/vue/24/outline'
 import CharacterStatus from '../components/CharacterStatus.vue'
 import CharacterLocation from '../components/CharacterLocation.vue'
@@ -143,6 +140,11 @@ const updatePageHeader = () => {
     })
   }
 }
+
+// Get fresh character data
+const freshCharacterData = computed(() => {
+  return authStore.charactersData[authStore.currentCharacterId] || null
+})
 
 onMounted(() => {
   updatePageHeader()

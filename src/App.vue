@@ -49,6 +49,5 @@ const toggleSidebar = () => {
 
 onMounted(() => {
   // Initial setup
-  console.log('EVE Horizon - The Ultimate Toolkit for EVE Online')
 })
 </script>

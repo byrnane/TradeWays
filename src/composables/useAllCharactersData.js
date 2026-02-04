@@ -1,6 +1,7 @@
 import { ref, computed } from 'vue'
-import { useAuthStore } from '../stores/auth.js'
 import { esiCharacterWallet, esiCharacterLocation, esiCharacterOnline, esiCharacterSheet, esiUniverseNames, esiUniverseSystem, esiUniverseConstellation } from '../services/esi.js'
+import { useAuthStore } from '../stores/auth.js'
+import { useCharacterStatusStore } from './useCharacterStatusStore.js'
 
 // Shared state for singleton pattern
 const isRefreshing = ref({})
@@ -33,19 +34,15 @@ export function useAllCharactersData() {
         if (!data.lastUpdated) {
           data.lastUpdated = Date.now()
         }
-        allCharactersData.value[characterId] = data
         return data
       } catch (e) {
         console.error('Failed to parse character data:', e)
         return {}
       }
     }
-    // If it's the current character, return from store
-    const authStore = getAuthStore()
-    if (characterId === authStore.currentCharacterId) {
-      return authStore.characterData || {}
-    }
-    return {}
+    
+    // Also try from allCharactersData state
+    return allCharactersData.value[characterId] || {}
   }
   
   // Save character data to storage
@@ -132,7 +129,7 @@ export function useAllCharactersData() {
       
       // Check if access token is expired
       if (token.expires_at && token.expires_at <= Date.now()) {
-        console.log('Access token expired for character:', characterId)
+        console.error('Access token expired for character:', characterId)
         try {
           await authStore.refreshCharacterToken(characterId)
           // Get updated token
@@ -178,7 +175,7 @@ export function useAllCharactersData() {
         ...existingData,
         wallet: wallet,
         location: location,
-        online: typeof online === 'boolean' ? online : (online === 'true' || online === true), // Ensure boolean
+        online: online && typeof online === 'object' ? Boolean(online.online) : Boolean(online), // Always convert to boolean
         locationName: null, // Will be filled below
         lastUpdated: Date.now() // Add timestamp of last update
       }
@@ -247,10 +244,9 @@ export function useAllCharactersData() {
       allCharactersData.value[characterId] = updatedData
       saveCharacterData(characterId, updatedData)
       
-      // Update auth store if it's current character
-      if (characterId === authStore.currentCharacterId) {
-        authStore.setCharacterData(updatedData)
-      }
+      // Update auth store unified storage
+      const store = getAuthStore()
+      store.setCharacterDataById(characterId, updatedData)
       
       return updatedData
     } catch (error) {
@@ -264,7 +260,7 @@ export function useAllCharactersData() {
         console.error('Authentication failed for character:', characterId)
         if (error.response?.data?.error === 'invalid_grant' || 
             error.response?.data?.error_description?.includes('invalid')) {
-          console.log('Token is invalid, removing character')
+          console.error('Token is invalid, removing character')
           authStore.removeCharacterAuthFailed(characterId)
           return
         }
@@ -288,7 +284,7 @@ export function useAllCharactersData() {
     
     const promises = characters.map(char => 
       updateCharacterData(char.character_id, characters).catch(error => {
-        console.error(`Failed to update ${char.name}:`, error)
+        console.error(`Failed to update character ${char.character_id}:`, error)
       })
     )
     

@@ -138,7 +138,7 @@
               </div>
               <div class="text-sm text-neutral-400">{{ authStore.character.corporation_name }}</div>
               <div class="flex items-center gap-2 mt-1">
-                <CharacterStatus :character="authStore.characterData" />
+                <CharacterStatus :character-id="authStore.character.character_id" />
                 <div class="text-xs text-neutral-500">
                   <CharacterLocation :character="authStore.characterData" view-mode="system" />
                 </div>
@@ -166,14 +166,14 @@
                     <div class="flex items-center justify-between gap-2">
                       <div class="font-medium text-neutral-100">{{ char.name }}</div>
                       <div class="text-xs font-mono text-neutral-500">
-                        <UpdateTimer :last-update="allCharactersData.getCharacterData(char.character_id)?.lastUpdated" :compact="true" />
+                        <UpdateTimer :last-update="authStore.getCharacterData(char.character_id)?.lastUpdated" :compact="true" />
                       </div>
                     </div>
                     <div class="text-xs text-neutral-400">{{ char.corporation_name }}</div>
                     <div class="flex items-center gap-3 mt-1">
-                      <CharacterStatus :character="getCharacterData(char.character_id)" />
+                      <CharacterStatus :character-id="char.character_id" />
                       <div class="text-xs text-neutral-500">
-                        <CharacterLocation :character="getCharacterData(char.character_id)" view-mode="system" />
+                        <CharacterLocation :character="getReactiveCharacterData(char.character_id)" view-mode="system" />
                       </div>
                     </div>
                   </div>
@@ -195,14 +195,14 @@
                     <div class="flex items-center justify-between gap-2">
                       <div class="font-medium text-neutral-100">{{ char.name }}</div>
                       <div class="text-xs font-mono text-neutral-500">
-                        <UpdateTimer :last-update="allCharactersData.getCharacterData(char.character_id)?.lastUpdated" :compact="true" />
+                        <UpdateTimer :last-update="authStore.getCharacterData(char.character_id)?.lastUpdated" :compact="true" />
                       </div>
                     </div>
                     <div class="text-xs text-neutral-400">{{ char.corporation_name }}</div>
                     <div class="flex items-center gap-3 mt-1">
-                      <CharacterStatus :character="getCharacterData(char.character_id)" />
+                      <CharacterStatus :character-id="char.character_id" />
                       <div class="text-xs text-neutral-500">
-                        <CharacterLocation :character="getCharacterData(char.character_id)" view-mode="system" />
+                        <CharacterLocation :character="getReactiveCharacterData(char.character_id)" view-mode="system" />
                       </div>
                     </div>
                   </div>
@@ -263,15 +263,11 @@ import { useAuthStore } from '../stores/auth.js'
 import { useSettingsStore } from '../stores/settings.js'
 import { 
   ChevronDownIcon,
-  UserIcon,
   Cog6ToothIcon,
-  SunIcon,
-  MoonIcon,
-  ComputerDesktopIcon,
   PlusIcon,
   ArrowRightOnRectangleIcon
 } from '@heroicons/vue/24/outline'
-import CharacterStatus from './CharacterStatus.vue'
+import CharacterStatus from '../components/CharacterStatus.vue'
 import CharacterLocation from './CharacterLocation.vue'
 import UpdateTimer from './UpdateTimer.vue'
 import { useAllCharactersData } from '../composables/useAllCharactersData.js'
@@ -292,26 +288,9 @@ const profileDropdownOpen = ref(false)
 const currentLocale = computed(() => locale.value)
 const currentTheme = computed(() => settingsStore.theme)
 
-const getCharacterData = (characterId) => {
-  // Always check localStorage first for immediate data
-  const dataKey = `character_data_${characterId}`
-  const stored = localStorage.getItem(dataKey)
-  let data = null
-  
-  if (stored) {
-    try {
-      data = JSON.parse(stored)
-    } catch (e) {
-      console.error('Failed to parse character data:', e)
-    }
-  }
-  
-  // If not in localStorage, try allCharactersData
-  if (!data) {
-    data = allCharactersData.getCharacterData(characterId)
-  }
-  
-  return data || {}
+// Create a reactive wrapper for character data
+const getReactiveCharacterData = (characterId) => {
+  return computed(() => authStore.charactersData[characterId] || null)
 }
 
 const themeIcon = computed(() => {
@@ -394,10 +373,6 @@ const handleImageError = (event) => {
 }
 
 onMounted(() => {
-  // Debug character data
-  console.log('Header mounted - authStore.character:', authStore.character)
-  console.log('Header mounted - isAuthenticated:', authStore.isAuthenticated)
-  
   // Initialize theme
   const cleanup = settingsStore.initTheme()
   
