@@ -85,7 +85,7 @@
                 :compact="true" 
                 :label="$t('profiles.timeToUpdate')"
                 :show-icon="false"
-                @time-up="() => refreshCharacter(char.character_id)"
+                @timer-expired="() => refreshCharacter(char.character_id)"
               />
             </div>
           </div>
@@ -134,6 +134,7 @@ import CharacterStatus from '../components/CharacterStatus.vue'
 import CharacterLocation from '../components/CharacterLocation.vue'
 import UpdateTimer from '../components/UpdateTimer.vue'
 import { useAllCharactersData } from '../composables/useAllCharactersData.js'
+import autoRefreshService from '../services/autoRefreshService.js'
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -151,13 +152,7 @@ onMounted(() => {
     subtitle: t('profiles.manageCharacters'),
     icon: UserCircleIcon
   })
-  // Start periodic updates for all characters
-  allCharactersData.startPeriodicUpdates()
-})
-
-onUnmounted(() => {
-  // Stop periodic updates
-  allCharactersData.stopPeriodicUpdates()
+  // Periodic updates are now handled in App.vue
 })
 
 const getCharacterData = (characterId) => {
@@ -167,7 +162,7 @@ const getCharacterData = (characterId) => {
 const refreshCharacter = async (characterId) => {
   isRefreshing.value[characterId] = true
   try {
-    await allCharactersData.updateCharacterData(characterId)
+    await autoRefreshService.updateCharacter(characterId)
     // Reset timer for this character
     if (timerRefs.value[characterId]) {
       timerRefs.value[characterId].resetTimer()

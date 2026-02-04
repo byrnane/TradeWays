@@ -1,6 +1,9 @@
-import { computed } from 'vue'
+import { computed, toRef } from 'vue'
 
 export function useCharacterLocation(character) {
+  // Convert to ref if it's not already reactive
+  const characterRef = toRef(character)
+  
   const getFullLocation = (char) => {
     if (!char) return null
     
@@ -33,27 +36,28 @@ export function useCharacterLocation(character) {
   }
   
   const location = computed(() => {
-    const parts = getFullLocation(character)
+    const parts = getFullLocation(characterRef.value)
     return parts ? parts.join(' > ') : 'Unknown Location'
   })
   
   const shortLocation = computed(() => {
-    if (!character) return 'Unknown'
+    const char = characterRef.value
+    if (!char) return 'Unknown'
     
     // Show station if in one
-    if (character.location?.station_name || character.station_name) {
-      return character.location?.station_name || character.station_name
+    if (char.location?.station_name || char.station_name) {
+      return char.location?.station_name || char.station_name
     }
     
     // Otherwise show system name from multiple sources
-    return character.location?.solar_system_name || 
-           character.locationName || 
-           character.system_name ||
+    return char.location?.solar_system_name || 
+           char.locationName || 
+           char.system_name ||
            'Unknown'
   })
   
   const locationParts = computed(() => {
-    return getFullLocation(character) || []
+    return getFullLocation(characterRef.value) || []
   })
   
   return {

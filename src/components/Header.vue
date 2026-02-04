@@ -133,7 +133,12 @@
               <div class="flex items-center justify-between gap-2">
                 <div class="font-medium text-neutral-100">{{ authStore.character.name }}</div>
                 <div class="text-xs font-mono text-neutral-500">
-                  <UpdateTimer :initial-time="60" :is-loading="authStore.isRefreshing" :compact="true" />
+                  <UpdateTimer 
+                    :initial-time="60" 
+                    :compact="true" 
+                    @refresh="() => autoRefreshService.updateAllCharacters()"
+                    @timer-expired="() => autoRefreshService.updateAllCharacters()" 
+                  />
                 </div>
               </div>
               <div class="text-sm text-neutral-400">{{ authStore.character.corporation_name }}</div>
@@ -166,7 +171,12 @@
                     <div class="flex items-center justify-between gap-2">
                       <div class="font-medium text-neutral-100">{{ char.name }}</div>
                       <div class="text-xs font-mono text-neutral-500">
-                        <UpdateTimer :last-update="authStore.getCharacterData(char.character_id)?.lastUpdated" :compact="true" />
+                        <UpdateTimer 
+                          :last-update="authStore.getCharacterData(char.character_id)?.lastUpdated" 
+                          :compact="true" 
+                          @refresh="() => autoRefreshService.updateCharacter(char.character_id)"
+                          @timer-expired="() => autoRefreshService.updateCharacter(char.character_id)" 
+                        />
                       </div>
                     </div>
                     <div class="text-xs text-neutral-400">{{ char.corporation_name }}</div>
@@ -195,7 +205,12 @@
                     <div class="flex items-center justify-between gap-2">
                       <div class="font-medium text-neutral-100">{{ char.name }}</div>
                       <div class="text-xs font-mono text-neutral-500">
-                        <UpdateTimer :last-update="authStore.getCharacterData(char.character_id)?.lastUpdated" :compact="true" />
+                        <UpdateTimer 
+                          :last-update="authStore.getCharacterData(char.character_id)?.lastUpdated" 
+                          :compact="true" 
+                          @refresh="() => autoRefreshService.updateCharacter(char.character_id)"
+                          @timer-expired="() => autoRefreshService.updateCharacter(char.character_id)" 
+                        />
                       </div>
                     </div>
                     <div class="text-xs text-neutral-400">{{ char.corporation_name }}</div>
@@ -271,6 +286,7 @@ import CharacterStatus from '../components/CharacterStatus.vue'
 import CharacterLocation from './CharacterLocation.vue'
 import UpdateTimer from './UpdateTimer.vue'
 import { useAllCharactersData } from '../composables/useAllCharactersData.js'
+import autoRefreshService from '../services/autoRefreshService.js'
 
 const emit = defineEmits(['toggle-sidebar'])
 
@@ -290,7 +306,9 @@ const currentTheme = computed(() => settingsStore.theme)
 
 // Create a reactive wrapper for character data
 const getReactiveCharacterData = (characterId) => {
-  return computed(() => authStore.charactersData[characterId] || null)
+  const baseCharacter = authStore.characters.find(c => c.character_id === characterId)
+  const characterData = authStore.getCharacterData(characterId)
+  return { ...baseCharacter, ...characterData }
 }
 
 const themeIcon = computed(() => {
@@ -338,7 +356,7 @@ const switchCharacter = async (character) => {
   profileDropdownOpen.value = false
   await authStore.switchCharacter(character.character_id)
   // Update data for the new character
-  await allCharactersData.updateCharacterData(character.character_id)
+  await autoRefreshService.updateCharacter(character.character_id)
 }
 
 const addNewProfile = () => {

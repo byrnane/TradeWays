@@ -97,7 +97,9 @@
 import { inject, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Cog6ToothIcon } from '@heroicons/vue/24/outline'
+import { useSettingsStore } from '../stores/settings.js'
 import { useAuthStore } from '../stores/auth.js'
+import autoRefreshService from '../services/autoRefreshService.js'
 import { usePageHeader } from '../composables/usePageHeader.js'
 
 const { locale, t } = useI18n()
@@ -134,8 +136,7 @@ const saveSettings = () => {
   
   // Restart periodic updates with new interval
   if (authStore.isAuthenticated) {
-    authStore.stopPeriodicUpdates()
-    authStore.startPeriodicUpdates()
+    autoRefreshService.restart()
   }
 }
 
