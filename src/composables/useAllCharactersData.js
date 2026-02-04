@@ -1,5 +1,15 @@
 import { ref, computed } from 'vue'
-import { esiCharacterWallet, esiCharacterLocation, esiCharacterOnline, esiCharacterSheet, esiUniverseNames, esiUniverseSystem, esiUniverseConstellation } from '../services/esi.js'
+import { storeToRefs } from 'pinia'
+import { 
+  esiCharacterWallet, 
+  esiCharacterLocation, 
+  esiCharacterOnline, 
+  esiCharacterSheet, 
+  esiUniverseNames, 
+  esiUniverseSystem, 
+  esiUniverseConstellation 
+} from '../services/esi.js'
+import { getTokens, setTokens } from '../utils/tokenUtils.js'
 import { useAuthStore } from '../stores/auth.js'
 import { useCharacterStatusStore } from './useCharacterStatusStore.js'
 
@@ -133,8 +143,7 @@ export function useAllCharactersData() {
         try {
           await authStore.refreshCharacterToken(characterId)
           // Get updated token
-          const updatedTokens = JSON.parse(localStorage.getItem('esi_tokens'))
-          const updatedToken = updatedTokens[characterId]
+          const updatedToken = getTokens()[characterId]
           if (updatedToken) {
             token = updatedToken
           }
@@ -304,8 +313,7 @@ export function useAllCharactersData() {
       // Check if we have characters
       const authStore = getAuthStore()
       if (authStore.characters && authStore.characters.length > 0) {
-        console.log('Updating data for all characters...')
-        await updateAllCharactersData()
+        await updateAll()
       }
     }, interval)
   }

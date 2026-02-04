@@ -10,35 +10,30 @@ export default {
       timeout: options.timeout || 30000
     })
 
-    // Get pinia instance
-    const pinia = app.config.globalProperties.$pinia
-
-    // Add interceptors later when pinia is available
-    app.mixin({
-      mounted() {
-        // Only add interceptors once
-        if (!http._interceptorsAdded) {
-          const interceptors = createInterceptors(http)
-          http.interceptors.request.use(
-            interceptors.requestSuccess,
-            interceptors.requestError
-          )
-          http.interceptors.response.use(
-            interceptors.responseSuccess,
-            interceptors.responseError
-          )
-          http._interceptorsAdded = true
-        }
-      }
-    })
+    // Add interceptors immediately
+    const interceptors = createInterceptors(http)
+    http.interceptors.request.use(
+      interceptors.requestSuccess,
+      interceptors.requestError
+    )
+    http.interceptors.response.use(
+      interceptors.responseSuccess,
+      interceptors.responseError
+    )
 
     // Create API requests
-    const api = createRequests(http, pinia)
+    const api = createRequests(http)
 
-    // Provide to app
+    // Make http and api available globally immediately
     app.config.globalProperties.$http = http
     app.config.globalProperties.$api = api
+    
+    // Also provide for injection
     app.provide('http', http)
     app.provide('api', api)
+    
+    // Make available globally for services immediately
+    window.__app_http__ = http
+    window.__app_api__ = api
   }
 }

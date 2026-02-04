@@ -9,7 +9,6 @@ export function usePageHeader() {
       setPageHeader({ title, subtitle, icon })
     } else {
       // Fallback for when provider is not available
-      console.warn('PageHeader provider not available, using fallback')
       setPageHeaderFallback()
     }
   }

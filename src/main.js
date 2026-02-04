@@ -1,36 +1,40 @@
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import axios from 'axios'
 import App from './App.vue'
 import router from './router'
 import i18n from './i18n'
-import { useUIStore } from './stores/ui.js'
 
-// Import API plugin
+// Import API plugin FIRST
 import apiPlugin from './api'
 
 // Import styles
 import './style.css'
 import './themes/light.css'
 
+// Create app instance
 const app = createApp(App)
+
+// Create pinia instance
 const pinia = createPinia()
 
-// Use plugins
+// Use pinia FIRST to make it available for API
 app.use(pinia)
-app.use(router)
-app.use(i18n)
 
-// Make pinia available globally
+// Make pinia available globally before API plugin
 app.config.globalProperties.$pinia = pinia
 
-// Use API plugin
+// Use API plugin SECOND (now pinia is available)
 app.use(apiPlugin, {
   baseURL: 'https://esi.evetech.net/latest',
   timeout: 30000
 })
 
+// Use other plugins
+app.use(router)
+app.use(i18n)
+
 // Initialize UI store
+import { useUIStore } from './stores/ui.js'
 const uiStore = useUIStore(pinia)
 
 // Show initial loading
@@ -38,10 +42,6 @@ uiStore.startLoading('Загрузка приложения...')
 
 // Mount app
 app.mount('#app')
-
-// Make http and api instances globally available for services after mount
-window.__app_http__ = app.config.globalProperties.$http
-window.__app_api__ = app.config.globalProperties.$api
 
 // Hide loading after app is mounted
 setTimeout(() => {

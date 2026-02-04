@@ -4,6 +4,7 @@ import { refreshAccessToken as esiRefreshToken } from '../services/esi.js'
 import { saveToStorage, removeFromStorage, STORAGE_KEYS, needsRefresh } from '../services/storage.js'
 import { useAllCharactersData } from '../composables/useAllCharactersData.js'
 import { useCharacterStatusStore } from '../composables/useCharacterStatusStore.js'
+import { getTokens, setTokens, getCurrentCharacterId } from '../utils/tokenUtils.js'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -272,12 +273,9 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem(dataKey)
       
       // Remove token from localStorage
-      const tokensData = localStorage.getItem('esi_tokens')
-      if (tokensData) {
-        const tokens = JSON.parse(tokensData)
-        delete tokens[characterId]
-        localStorage.setItem('esi_tokens', JSON.stringify(tokens))
-      }
+      const tokens = getTokens()
+      delete tokens[characterId]
+      setTokens(tokens)
       
       // Remove character data from unified storage
       delete charactersData.value[characterId]
@@ -305,7 +303,7 @@ export const useAuthStore = defineStore('auth', () => {
   // Save tokens to localStorage for persistence
   const saveTokensToSession = () => {
     // Get all existing tokens
-    const allTokens = JSON.parse(localStorage.getItem('esi_tokens') || '{}')
+    const allTokens = getTokens()
     
     // Update tokens for all characters that have them
     characters.value.forEach(char => {
@@ -320,7 +318,7 @@ export const useAuthStore = defineStore('auth', () => {
     })
     
     // Save to localStorage
-    localStorage.setItem('esi_tokens', JSON.stringify(allTokens))
+    setTokens(allTokens)
   }
 
   const saveCharacters = () => {
@@ -402,35 +400,32 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await esiRefreshToken(char.refresh_token)
       
       // Update tokens in localStorage
-      const tokensData = localStorage.getItem('esi_tokens')
-      if (tokensData) {
-        const tokens = JSON.parse(tokensData)
-        tokens[characterId] = {
+      const tokens = getTokens()
+      tokens[characterId] = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || char.refresh_token,
+        expires_at: Date.now() + (data.expires_in * 1000)
+      }
+      setTokens(tokens)
+      
+      // Update character in array
+      const index = characters.value.findIndex(c => c.character_id === characterId)
+      if (index >= 0) {
+        characters.value[index] = {
+          ...characters.value[index],
           access_token: data.access_token,
           refresh_token: data.refresh_token || char.refresh_token,
           expires_at: Date.now() + (data.expires_in * 1000)
         }
-        localStorage.setItem('esi_tokens', JSON.stringify(tokens))
-        
-        // Update character in array
-        const index = characters.value.findIndex(c => c.character_id === characterId)
-        if (index >= 0) {
-          characters.value[index] = {
-            ...characters.value[index],
-            access_token: data.access_token,
-            refresh_token: data.refresh_token || char.refresh_token,
-            expires_at: Date.now() + (data.expires_in * 1000)
-          }
-        }
-        
-        // If it's current character, update character.value
-        if (characterId === currentCharacterId.value) {
-          character.value = {
-            ...character.value,
-            access_token: data.access_token,
-            refresh_token: data.refresh_token || char.refresh_token,
-            expires_at: Date.now() + (data.expires_in * 1000)
-          }
+      }
+      
+      // If it's current character, update character.value
+      if (characterId === currentCharacterId.value) {
+        character.value = {
+          ...character.value,
+          access_token: data.access_token,
+          refresh_token: data.refresh_token || char.refresh_token,
+          expires_at: Date.now() + (data.expires_in * 1000)
         }
       }
       
