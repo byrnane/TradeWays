@@ -212,14 +212,14 @@ const formatLastUpdate = (timestamp) => {
   return t('profiles.daysAgo', { days: Math.floor(seconds / 86400) })
 }
 
-const switchToCharacter = (character) => {
-  authStore.switchCharacter(character.character_id)
+const switchToCharacter = async (character) => {
+  await authStore.switchCharacter(character.character_id)
   window.location.reload()
 }
 
-const removeCharacter = (character) => {
+const removeCharacter = async (character) => {
   if (confirm(t('profiles.confirmRemove', { name: character.name }))) {
-    authStore.removeCharacter(character.character_id)
+    await authStore.removeCharacter(character.character_id)
     if (authStore.characters.length === 0) {
       router.push('/')
     }

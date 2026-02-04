@@ -3,10 +3,10 @@ import { getTokens, setTokens, getCurrentCharacterId, isTokenExpired, setTokenFo
 
 export const createInterceptors = (axios) => {
   // Request interceptor - add auth token
-  const requestSuccess = (config) => {
+  const requestSuccess = async (config) => {
     // Only add auth token if not already present
     if (!config.headers.Authorization) {
-      const allTokens = getTokens()
+      const allTokens = await getTokens()
       
       // Try to determine which character's token to use
       let characterId = null
@@ -46,12 +46,12 @@ export const createInterceptors = (axios) => {
     // Handle 401 Unauthorized
     if (error.response?.status === 401) {
       const allTokens = getTokens()
+      let characterId = null
       
       if (!error.config._retry) {
         try {
           // Try to find which character's token was used
           // First check if we can get character ID from the URL
-          let characterId = null
           const urlMatch = error.config.url?.match(/\/characters\/(\d+)\//)
           if (urlMatch) {
             characterId = parseInt(urlMatch[1])
@@ -85,9 +85,8 @@ export const createInterceptors = (axios) => {
           console.error('Token refresh failed:', refreshError)
           // Only clear tokens for this specific character, not all
           if (characterId) {
-            const tokens = getTokens()
-            delete tokens[characterId]
-            setTokens(tokens)
+            const { removeTokenForCharacter } = await import('../utils/tokenUtils.js')
+            await removeTokenForCharacter(characterId)
             
             // If this was the current character, we need to re-auth
             if (characterId === getCurrentCharacterId()) {

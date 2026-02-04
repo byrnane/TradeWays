@@ -348,9 +348,9 @@ const addNewProfile = () => {
   router.push('/auth')
 }
 
-const logout = () => {
+const logout = async () => {
   profileDropdownOpen.value = false
-  authStore.logout()
+  await authStore.logout()
   authStore.stopAutoRefresh()
   router.push('/')
 }
@@ -376,10 +376,7 @@ onMounted(() => {
   // Initialize theme
   const cleanup = settingsStore.initTheme()
   
-  // Load data for all characters if authenticated
-  if (authStore.isAuthenticated && authStore.characters.length > 0) {
-    allCharactersData.updateAllCharactersData(authStore.characters)
-  }
+  // Don't load data here - it will be loaded during auth store initialization
   
   document.addEventListener('click', closeDropdowns)
   

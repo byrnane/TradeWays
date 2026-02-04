@@ -103,7 +103,7 @@ onMounted(async () => {
       ...fullCharacterData
     }
     
-    authStore.addCharacter(mergedCharacterData, tokenData)
+    await authStore.addCharacter(mergedCharacterData, tokenData)
     
     // Load essential character data (wallet, location, etc.)
     try {

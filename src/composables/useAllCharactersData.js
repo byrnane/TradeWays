@@ -83,15 +83,24 @@ export function useAllCharactersData() {
     } catch (error) {
       if (error.name === 'QuotaExceededError') {
         console.error('LocalStorage quota exceeded, cleaning old data...')
-        // Clean oldest character data
+        // Clean oldest character data using LRU strategy
         const sortedIds = Object.keys(lastUpdate.value).sort((a, b) => 
           lastUpdate.value[a] - lastUpdate.value[b]
         )
+        
         if (sortedIds.length > 0) {
-          const oldestId = sortedIds[0]
-          localStorage.removeItem(`character_data_${oldestId}`)
-          delete lastUpdate.value[oldestId]
-          delete allCharactersData.value[oldestId]
+          // Remove the oldest 25% of character data
+          const removeCount = Math.max(Math.floor(sortedIds.length * 0.25), 1)
+          const toRemove = sortedIds.slice(0, removeCount)
+          
+          toRemove.forEach(id => {
+            localStorage.removeItem(`character_data_${id}`)
+            delete lastUpdate.value[id]
+            delete allCharactersData.value[id]
+          })
+          
+          console.warn(`Removed ${toRemove.length} oldest character data entries to free space`)
+          
           // Retry saving
           try {
             const dataKey = `character_data_${characterId}`
@@ -99,6 +108,23 @@ export function useAllCharactersData() {
             lastUpdate.value[characterId] = Date.now()
           } catch (retryError) {
             console.error('Failed to save data even after cleanup:', retryError)
+            // As last resort, remove even more data
+            if (sortedIds.length > removeCount) {
+              const moreToRemove = sortedIds.slice(removeCount, removeCount * 2)
+              moreToRemove.forEach(id => {
+                localStorage.removeItem(`character_data_${id}`)
+                delete lastUpdate.value[id]
+                delete allCharactersData.value[id]
+              })
+              
+              // Final retry
+              try {
+                localStorage.setItem(dataKey, JSON.stringify(data))
+                lastUpdate.value[characterId] = Date.now()
+              } catch (finalError) {
+                console.error('Failed to save data after aggressive cleanup:', finalError)
+              }
+            }
           }
         }
       } else {
@@ -136,6 +162,44 @@ export function useAllCharactersData() {
       
       const tokens = JSON.parse(tokensData)
       let token = tokens[characterId]
+      
+      if (!token) {
+        console.error(`No token found for character ${characterId}`)
+        return
+      }
+      
+      // Check if token is expired and refresh if needed
+      if (token.expires_at <= Date.now()) {
+        if (token.refresh_token) {
+          try {
+            console.log(`Token expired for character ${characterId}, refreshing...`)
+            // Import refresh function to avoid circular dependency
+            const { refreshAccessToken } = await import('../services/esi.js')
+            const newTokens = await refreshAccessToken(token.refresh_token)
+            
+            // Update tokens for this character
+            const { setTokenForCharacter } = await import('../utils/tokenUtils.js')
+            await setTokenForCharacter(characterId, {
+              access_token: newTokens.access_token,
+              refresh_token: newTokens.refresh_token || token.refresh_token,
+              expires_at: Date.now() + (newTokens.expires_in * 1000)
+            })
+            
+            // Use the new token
+            token = {
+              access_token: newTokens.access_token,
+              refresh_token: newTokens.refresh_token || token.refresh_token,
+              expires_at: Date.now() + (newTokens.expires_in * 1000)
+            }
+          } catch (refreshError) {
+            console.error(`Failed to refresh token for character ${characterId}:`, refreshError)
+            // Continue with expired token - interceptor will handle the 401
+          }
+        } else {
+          console.error(`Token expired for character ${characterId} and no refresh token available`)
+          return
+        }
+      }
       
       if (!token) {
         console.error('No token found for character:', characterId)
@@ -283,15 +347,21 @@ export function useAllCharactersData() {
       // Get auth store lazily for error handling
       const authStore = getAuthStore()
       
-      // If authentication failed permanently, remove the character
+      // If authentication failed, try to refresh token first
       if (error.response?.status === 401) {
         console.error('Authentication failed for character:', characterId)
+        
+        // Check if it's an invalid_grant error (token is permanently invalid)
         if (error.response?.data?.error === 'invalid_grant' || 
             error.response?.data?.error_description?.includes('invalid')) {
           console.error('Token is invalid, removing character')
           authStore.removeCharacterAuthFailed(characterId)
           return
         }
+        
+        // For other 401 errors, the refresh will be handled by the interceptor
+        // Just log the error and keep existing data
+        console.log('Token expired, will be refreshed by interceptor')
       }
       
       // Keep existing data on other errors
@@ -303,6 +373,9 @@ export function useAllCharactersData() {
   
   // Update data for all characters
   const updateAllCharactersData = async (charactersList = null) => {
+    // Cleanup before updating
+    cleanup()
+    
     const authStore = getAuthStore()
     const characters = charactersList || authStore.characters || []
     
@@ -321,6 +394,9 @@ export function useAllCharactersData() {
   
   // Start periodic updates for all characters
   const startPeriodicUpdates = () => {
+    // Cleanup first
+    cleanup()
+    
     // Clear existing interval
     if (updateInterval) {
       clearInterval(updateInterval)
@@ -332,7 +408,7 @@ export function useAllCharactersData() {
       // Check if we have characters
       const authStore = getAuthStore()
       if (authStore.characters && authStore.characters.length > 0) {
-        await updateAll()
+        await updateAllCharactersData()
       }
     }, interval)
   }
@@ -366,6 +442,9 @@ export function useAllCharactersData() {
   
   // Initialize - load all saved data
   const initialize = () => {
+    // Cleanup first
+    cleanup()
+    
     const authStore = getAuthStore()
     if (authStore.characters && authStore.characters.length > 0) {
       authStore.characters.forEach(char => {
