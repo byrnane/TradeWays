@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getTokens, setTokens, getCurrentCharacterId } from '../utils/tokenUtils.js'
+import { getTokens, setTokens, getCurrentCharacterId, isTokenExpired } from '../utils/tokenUtils.js'
 
 export const createInterceptors = (axios) => {
   // Request interceptor - add auth token
@@ -22,7 +22,7 @@ export const createInterceptors = (axios) => {
       
       if (characterId && allTokens[characterId]) {
         const tokens = allTokens[characterId]
-        if (tokens.access_token) {
+        if (tokens.access_token && !isTokenExpired(tokens)) {
           config.headers.Authorization = `Bearer ${tokens.access_token}`
         }
       }
@@ -107,6 +107,15 @@ export const createInterceptors = (axios) => {
     // Handle ESI rate limiting (error limited)
     if (error.response?.status === 420) {
       const retryAfter = error.response.headers['x-esi-error-limit-reset'] || 60
+      
+      // Limit retry attempts to prevent infinite loops
+      const retryCount = error.config._retryCount || 0
+      if (retryCount >= 3) {
+        console.error('Max retry attempts reached for rate limited request')
+        return Promise.reject(error)
+      }
+      
+      error.config._retryCount = retryCount + 1
       
       // Return a promise that retries after the delay
       return new Promise((resolve) => {

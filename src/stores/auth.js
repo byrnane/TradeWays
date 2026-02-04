@@ -4,7 +4,7 @@ import { refreshAccessToken as esiRefreshToken } from '../services/esi.js'
 import { saveToStorage, removeFromStorage, STORAGE_KEYS, needsRefresh } from '../services/storage.js'
 import { useAllCharactersData } from '../composables/useAllCharactersData.js'
 import { useCharacterStatusStore } from '../composables/useCharacterStatusStore.js'
-import { getTokens, setTokens, getCurrentCharacterId } from '../utils/tokenUtils.js'
+import { getTokens, setTokens, getCurrentCharacterId, setTokenForCharacter } from '../utils/tokenUtils.js'
 
 export const useAuthStore = defineStore('auth', () => {
   // State
@@ -313,7 +313,6 @@ export const useAuthStore = defineStore('auth', () => {
           refresh_token: char.refresh_token,
           expires_at: char.expires_at
         }
-      } else {
       }
     })
     
@@ -340,7 +339,7 @@ export const useAuthStore = defineStore('auth', () => {
     saveTokensToSession()
   }
 
-  const setTokens = (token, refresh, expiresIn) => {
+  const setCurrentCharacterTokens = (token, refresh, expiresIn) => {
     const char = character.value
     if (char) {
       char.access_token = token
@@ -373,7 +372,7 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await esiRefreshToken(refreshToken.value)
       
       // Update tokens with new values
-      setTokens(data.access_token, data.refresh_token || refreshToken.value, data.expires_in)
+      setCurrentCharacterTokens(data.access_token, data.refresh_token || refreshToken.value, data.expires_in)
       
       return data.access_token
     } catch (error) {
@@ -400,13 +399,11 @@ export const useAuthStore = defineStore('auth', () => {
       const data = await esiRefreshToken(char.refresh_token)
       
       // Update tokens in localStorage
-      const tokens = getTokens()
-      tokens[characterId] = {
+      await setTokenForCharacter(characterId, {
         access_token: data.access_token,
         refresh_token: data.refresh_token || char.refresh_token,
         expires_at: Date.now() + (data.expires_in * 1000)
-      }
-      setTokens(tokens)
+      })
       
       // Update character in array
       const index = characters.value.findIndex(c => c.character_id === characterId)
@@ -737,7 +734,7 @@ export const useAuthStore = defineStore('auth', () => {
     switchCharacter,
     removeCharacter,
     removeCharacterAuthFailed,
-    setTokens,
+    setCurrentCharacterTokens,
     clearTokens,
     refreshAccessToken,
     refreshCharacterToken,

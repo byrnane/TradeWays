@@ -27,6 +27,25 @@ export function useAllCharactersData() {
     return useAuthStore()
   }
   
+  // Cleanup function to prevent memory leaks
+  const cleanup = () => {
+    // Clear refresh state for characters that no longer exist
+    const authStore = getAuthStore()
+    const currentCharacterIds = new Set(authStore.characters.map(c => c.character_id))
+    
+    Object.keys(isRefreshing.value).forEach(charId => {
+      if (!currentCharacterIds.has(parseInt(charId))) {
+        delete isRefreshing.value[charId]
+        delete lastUpdate.value[charId]
+        delete allCharactersData.value[charId]
+        if (timers.value[charId]) {
+          clearTimeout(timers.value[charId])
+          delete timers.value[charId]
+        }
+      }
+    })
+  }
+  
   // Get character data from storage or return empty object
   const getCharacterData = (characterId) => {
     // First check memory
@@ -383,6 +402,7 @@ export function useAllCharactersData() {
     startPeriodicUpdates,
     stopPeriodicUpdates,
     getTimeSinceUpdate,
-    initialize
+    initialize,
+    cleanup
   }
 }

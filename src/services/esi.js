@@ -1,12 +1,19 @@
 // ESI API service using the API module
 
-// Helper to get default headers with User-Agent
+// Helper to check if API is available
+const ensureApiAvailable = () => {
+  if (!window.__app_api__) {
+    throw new Error('API instance not available. Make sure the app is mounted.')
+  }
+}
+
+// Helper to get default headers
 const getDefaultHeaders = (accessToken) => ({
-  'Authorization': `Bearer ${accessToken}`,
-  'User-Agent': `EVE Horizon - TradeWays (contact: ${import.meta.env.VITE_CONTACT_EMAIL || 'contact@example.com'})`
+  'Authorization': `Bearer ${accessToken}`
 })
 
 export const getAuthUrl = () => {
+  ensureApiAvailable()
   const clientId = import.meta.env.VITE_ESI_CLIENT_ID
   const callbackUrl = import.meta.env.VITE_ESI_CALLBACK_URL
   const scopes = import.meta.env.VITE_ESI_SCOPES
@@ -19,6 +26,7 @@ export const getAuthUrl = () => {
 }
 
 export const exchangeCodeForTokens = async (code) => {
+  ensureApiAvailable()
   const clientId = import.meta.env.VITE_ESI_CLIENT_ID
   const clientSecret = import.meta.env.VITE_ESI_CLIENT_SECRET
   
@@ -27,11 +35,13 @@ export const exchangeCodeForTokens = async (code) => {
 }
 
 export const verifyToken = async (accessToken) => {
+  ensureApiAvailable()
   const response = await window.__app_api__.auth.verifyToken(accessToken)
   return response.data
 }
 
 export const refreshAccessToken = async (refreshToken) => {
+  ensureApiAvailable()
   const clientId = import.meta.env.VITE_ESI_CLIENT_ID
   const clientSecret = import.meta.env.VITE_ESI_CLIENT_SECRET
   
