@@ -13,7 +13,8 @@ export function normalizeCharacterData(character) {
     systemName: character.system_name || character.location?.solar_system_name || '',
     regionName: character.regionName || character.location?.region_name || '',
     constellationName: character.constellationName || character.location?.constellation_name || '',
-    stationName: character.stationName || character.location?.station_name || '',
+    stationName: character.stationName || character.location?.station_name || character.location?.structure_name || '',
+    structureName: character.structureName || character.location?.structure_name || '',
     
     // Normalize security status
     systemSecurityStatus: character.system_security_status || 
@@ -22,7 +23,9 @@ export function normalizeCharacterData(character) {
     
     // Normalize IDs
     systemId: character.system_id || character.location?.solar_system_id || null,
-    characterId: character.characterId || character.character_id || character.id || null
+    characterId: character.characterId || character.character_id || character.id || null,
+    stationId: character.stationId || character.location?.station_id || null,
+    structureId: character.structureId || character.location?.structure_id || null
   }
 }
 

@@ -327,6 +327,16 @@ export function useAllCharactersData() {
               updatedData.location.station_name = stationNames[0].name
             }
           }
+          
+          // Get structure name if in structure (e.g., citadel)
+          if (updatedData.location.structure_id) {
+            const structureNames = await esiUniverseNames([updatedData.location.structure_id], token.access_token)
+            if (structureNames && structureNames.length > 0) {
+              updatedData.location.structure_name = structureNames[0].name
+              // Also set station_name for compatibility with existing location display logic
+              updatedData.location.station_name = structureNames[0].name
+            }
+          }
         } catch (error) {
           console.error('Failed to get location names:', error)
         }

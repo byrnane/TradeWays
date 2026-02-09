@@ -133,11 +133,17 @@ const breadcrumbParts = computed(() => {
   return parts
 })
 
-// Current position (station or "In Space")
+// Current position (station, structure, or "In Space")
 const currentPosition = computed(() => {
   if (!normalizedCharacter.value?.location) return t('common.unknown')
   
-  if (normalizedCharacter.value.stationName) {
+  // Check if in structure first (citadel, etc.)
+  if (normalizedCharacter.value.structureName) {
+    return normalizedCharacter.value.structureName
+  }
+  
+  // Then check if in station
+  if (normalizedCharacter.value.stationName && normalizedCharacter.value.stationName !== normalizedCharacter.value.structureName) {
     return normalizedCharacter.value.stationName
   }
   

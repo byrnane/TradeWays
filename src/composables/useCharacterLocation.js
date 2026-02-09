@@ -19,6 +19,10 @@ export function useCharacterLocation(character) {
     if (char.location?.station_name || char.station_name) {
       parts.push(char.location?.station_name || char.station_name)
       parts.push(systemName)
+    } else if (char.location?.structure_name || char.structure_name) {
+      // Handle structures (citadels, etc.)
+      parts.push(char.location?.structure_name || char.structure_name)
+      parts.push(systemName)
     } else {
       parts.push(systemName)
     }
@@ -43,6 +47,11 @@ export function useCharacterLocation(character) {
   const shortLocation = computed(() => {
     const char = characterRef.value
     if (!char) return 'Unknown'
+    
+    // Show structure if in one (citadel, etc.)
+    if (char.location?.structure_name || char.structure_name) {
+      return char.location?.structure_name || char.structure_name
+    }
     
     // Show station if in one
     if (char.location?.station_name || char.station_name) {
